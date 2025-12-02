@@ -1,0 +1,17 @@
+﻿# Virtual Environment
+.venv/
+venv/
+
+# PyCharm
+.idea/
+*.iml
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Test files
+test_*.txt
+test_*.enc
+test_*.bin
+test_*.dec
