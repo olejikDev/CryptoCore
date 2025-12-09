@@ -11,7 +11,7 @@ import sys
 def parse_args():
     """Разбор и валидация аргументов командной строки"""
     parser = argparse.ArgumentParser(
-        description="CryptoCore - инструмент для шифрования и дешифрования файлов с использованием AES-128 в режиме ECB",
+        description="CryptoCore - инструмент для шифрования и дешифрования файлов с использованием AES-128",
         add_help=False
     )
 
@@ -26,7 +26,7 @@ def parse_args():
         "-mode",
         type=str,
         required=True,
-        help="Режим работы (поддерживается только 'ecb')"
+        help="Режим работы (поддерживается: 'ecb', 'cbc', 'cfb', 'ofb', 'ctr')"
     )
 
     group = parser.add_mutually_exclusive_group(required=True)
@@ -38,6 +38,13 @@ def parse_args():
         type=str,
         required=True,
         help="Ключ шифрования в формате hex (16 байт = 32 hex символа)"
+    )
+
+    parser.add_argument(
+        "-iv",
+        type=str,
+        required=False,
+        help="Вектор инициализации в формате hex (16 байт = 32 hex символа). Требуется только при дешифровании в режимах CBC, CFB, OFB, CTR"
     )
 
     parser.add_argument(
@@ -60,6 +67,13 @@ def parse_args():
 
     validate_args(args)
 
+    # Sprint 2: Обработка IV согласно требованиям
+    if args.mode.lower() != 'ecb':
+        # Для не-ECB режимов
+        if args.encrypt and args.iv:
+            # ⚠️ ИСПРАВЛЕНО: Теперь ошибка, а не warning
+            print_error("Аргумент --iv не принимается при шифровании. IV генерируется автоматически.")
+
     if not args.output:
         args.output = generate_output_filename(args.input, args.encrypt)
 
@@ -72,8 +86,17 @@ def validate_args(args):
     if args.algorithm.lower() != "aes":
         print_error(f"Неподдерживаемый алгоритм: '{args.algorithm}'. Поддерживается только 'aes'.")
 
-    if args.mode.lower() != "ecb":
-        print_error(f"Неподдерживаемый режим: '{args.mode}'. Поддерживается только 'ecb'.")
+    valid_modes = ['ecb', 'cbc', 'cfb', 'ofb', 'ctr']
+    if args.mode.lower() not in valid_modes:
+        print_error(f"Неподдерживаемый режим: '{args.mode}'. Поддерживается: {', '.join(valid_modes)}.")
+
+    # Sprint 2: Проверка IV
+    if args.iv:
+        validate_iv(args.iv)
+
+    # Sprint 2: Дополнительная проверка для ECB режима
+    if args.mode.lower() == 'ecb' and args.iv:
+        print_error("Аргумент --iv не поддерживается в режиме ECB.")
 
     validate_key(args.key)
     validate_input_file(args.input)
@@ -89,6 +112,16 @@ def validate_key(key):
     hex_pattern = re.compile(r'^[0-9a-fA-F]{32}$')
     if not hex_pattern.match(clean_key):
         print_error(f"Ключ должен содержать только hex символы (0-9, a-f, A-F).")
+
+
+def validate_iv(iv):
+    """Валидация вектора инициализации"""
+    if len(iv) != 32:
+        print_error(f"Некорректная длина IV: {len(iv)} символов. Требуется 32 hex символа (16 байт).")
+
+    hex_pattern = re.compile(r'^[0-9a-fA-F]{32}$')
+    if not hex_pattern.match(iv):
+        print_error(f"IV должен содержать только hex символы (0-9, a-f, A-F).")
 
 
 def validate_input_file(filepath):

@@ -1,17 +1,30 @@
-﻿# Virtual Environment
-.venv/
-venv/
+﻿# Создайте файл .gitignore
+echo "# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# CryptoCore - временные файлы
+*.enc
+*.dec
+*.bin
+*_encrypted*
+*_decrypted*
+*_cipher*
+test_*.txt
+test_*.bin
+t_*.txt
+new_*.txt
+new_*.bin
 
 # PyCharm
 .idea/
-*.iml
 
-# Python cache
-__pycache__/
-*.pyc
+# Virtual Environment
+.venv/
+venv/
 
-# Test files
-test_*.txt
-test_*.enc
-test_*.bin
-test_*.dec
+# OS
+.DS_Store
+Thumbs.db
+" > .gitignore
