@@ -2,7 +2,7 @@
 """
 CryptoCore - CLI инструмент для шифрования/дешифрования файлов
 Главный исполняемый файл
-Sprint 2: Поддержка ECB, CBC, CFB, OFB, CTR режимов
+Sprint 3: Поддержка auto-generated ключей через CSPRNG
 """
 
 import sys
@@ -16,6 +16,10 @@ def main():
         # Парсим аргументы командной строки
         args = parse_args()
 
+        # Sprint 3: Определяем, нужно ли генерировать ключ
+        # Если шифруем и ключ не указан - генерируем
+        auto_generate_key = args.encrypt and not args.key
+
         # Создаем объект шифра
         cipher = CryptoCipher(
             algorithm=args.algorithm,
@@ -23,6 +27,16 @@ def main():
             key=args.key,
             iv=args.iv
         )
+
+        # Sprint 3: Выводим auto-generated ключ (требование CLI-3)
+        if auto_generate_key:
+            key_hex = cipher.get_auto_generated_key_hex()
+            if key_hex:
+                print(f"[+] Сгенерирован случайный ключ: {key_hex}")
+                print(f"    Сохраните этот ключ для дешифрования!")
+                print(f"    Пример команды дешифрования:")
+                print(f"    python cryptocore.py -algorithm aes -mode {args.mode} -decrypt \\")
+                print(f"      -key @{key_hex} -input {args.output} -output decrypted.txt")
 
         # Выполняем операцию
         if args.encrypt:

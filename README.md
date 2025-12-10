@@ -110,3 +110,17 @@ python cryptocore.py -algorithm aes -mode cbc -decrypt \
   -iv AABBCCDDEEFF00112233445566778899 \
   -input openssl_cipher.bin -output decrypted.txt
 
+## Sprint 3: Генерация криптографически стойких случайных ключей
+
+### Автоматическая генерация ключей
+
+При шифровании теперь можно опускать параметр `-key`, и CryptoCore автоматически сгенерирует криптографически стойкий случайный ключ:
+
+```bash
+# Шифрование с автоматической генерацией ключа
+python cryptocore.py -algorithm aes -mode cbc -encrypt \
+  -input plain.txt -output cipher.bin
+
+# Вывод:
+# [+] Сгенерирован случайный ключ: 1a2b3c4d5e6f7890fedcba9876543210
+# [+] Файл успешно зашифрован...

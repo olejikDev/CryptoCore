@@ -1,6 +1,6 @@
 """
 Основной класс для шифрования и дешифрования файлов
-Sprint 2: Поддержка ECB, CBC, CFB, OFB, CTR режимов
+Sprint 3: Поддержка auto-generated ключей через CSPRNG
 """
 
 from src.modes.ecb import ECBMode
@@ -9,18 +9,36 @@ from src.modes.cfb import CFBMode
 from src.modes.ofb import OFBMode
 from src.modes.ctr import CTRMode
 from src.file_io import read_binary, write_binary
+from src.csprng import generate_aes_key, generate_aes_key_hex
 
 
 class CryptoCipher:
     """Основной класс для работы с шифрованием"""
 
-    def __init__(self, algorithm, mode, key, iv=None):
+    def __init__(self, algorithm, mode, key=None, iv=None):
         """Инициализация шифра"""
         self.algorithm = algorithm.lower()
         self.mode = mode.lower()
-        self.key = self._parse_key(key)
+        self.auto_generated_key = None
+
+        # Sprint 3: Обработка ключа (может быть None для auto-generation)
+        self.key = self._process_key(key)
         self.iv = self._parse_iv(iv) if iv else None
         self.cipher = self._init_cipher()
+
+    def _process_key(self, key_str):
+        """
+        Обработка ключа:
+        - Если передан ключ, парсим его
+        - Если None, генерируем случайный ключ
+        """
+        if key_str:
+            # Используем переданный ключ
+            return self._parse_key(key_str)
+        else:
+            # Sprint 3: Генерация случайного ключа
+            self.auto_generated_key = generate_aes_key()
+            return self.auto_generated_key
 
     def _parse_key(self, key_str):
         """Парсинг ключа из hex строки"""
@@ -76,6 +94,17 @@ class CryptoCipher:
         else:
             # Для остальных режимов передаем IV (может быть None)
             return cipher_class(self.key, self.iv)
+
+    def get_auto_generated_key_hex(self):
+        """
+        Получить auto-generated ключ в hex формате
+
+        Returns:
+            str: hex строка ключа или None если ключ не был auto-generated
+        """
+        if self.auto_generated_key:
+            return self.auto_generated_key.hex()
+        return None
 
     def encrypt_file(self, input_file, output_file):
         """Шифрование файла"""

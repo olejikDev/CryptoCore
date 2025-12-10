@@ -1,5 +1,6 @@
 """
 Парсер аргументов командной строки для CryptoCore
+Sprint 3: Поддержка опционального ключа для шифрования
 """
 
 import argparse
@@ -36,15 +37,19 @@ def parse_args():
     parser.add_argument(
         "-key",
         type=str,
-        required=True,
-        help="Ключ шифрования в формате hex (16 байт = 32 hex символа)"
+        required=False,  # ИЗМЕНЕНО: было True, стало False
+        help="Ключ шифрования в формате hex (16 байт = 32 hex символа). "
+             "Если не указан при шифровании, будет сгенерирован случайный ключ. "
+             "При дешифровании ключ обязателен."
     )
 
     parser.add_argument(
         "-iv",
         type=str,
         required=False,
-        help="Вектор инициализации в формате hex (16 байт = 32 hex символа). Требуется только при дешифровании в режимах CBC, CFB, OFB, CTR"
+        help="Вектор инициализации в формате hex (16 байт = 32 hex символа). "
+             "Требуется только при дешифровании в режимах CBC, CFB, OFB, CTR "
+             "если IV не записан в начале файла"
     )
 
     parser.add_argument(
@@ -90,6 +95,18 @@ def validate_args(args):
     if args.mode.lower() not in valid_modes:
         print_error(f"Неподдерживаемый режим: '{args.mode}'. Поддерживается: {', '.join(valid_modes)}.")
 
+    # Sprint 3: Проверка ключа (теперь опционально)
+    if args.key:
+        validate_key(args.key)
+        # Sprint 3: Проверка слабых ключей (требование CLI-5)
+        check_weak_key(args.key)
+    elif args.encrypt:
+        # При шифровании без ключа - ключ будет сгенерирован (новое в Sprint 3)
+        pass
+    else:
+        # При дешифровании ключ обязателен (требование CLI-4)
+        print_error("Ключ обязателен для дешифрования. Используйте -key для указания ключа.")
+
     # Sprint 2: Проверка IV
     if args.iv:
         validate_iv(args.iv)
@@ -98,8 +115,36 @@ def validate_args(args):
     if args.mode.lower() == 'ecb' and args.iv:
         print_error("Аргумент --iv не поддерживается в режиме ECB.")
 
-    validate_key(args.key)
     validate_input_file(args.input)
+
+
+def check_weak_key(key_str):
+    """Проверка слабых ключей (требование CLI-5)"""
+    clean_key = key_str.lstrip('@')
+
+    try:
+        key_bytes = bytes.fromhex(clean_key)
+
+        # Проверка на все нули
+        if all(b == 0 for b in key_bytes):
+            print(f"[!] Предупреждение: Используется слабый ключ (все нули)")
+
+        # Проверка на последовательные байты
+        is_sequential = True
+        for i in range(1, len(key_bytes)):
+            if key_bytes[i] != key_bytes[i-1] + 1:
+                is_sequential = False
+                break
+
+        if is_sequential:
+            print(f"[!] Предупреждение: Используется слабый ключ (последовательные байты)")
+
+        # Проверка на одинаковые байты
+        if all(b == key_bytes[0] for b in key_bytes):
+            print(f"[!] Предупреждение: Используется слабый ключ (все байты одинаковые)")
+
+    except:
+        pass  # Если не можем проверить, пропускаем
 
 
 def validate_key(key):
