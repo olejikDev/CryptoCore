@@ -2,6 +2,37 @@
 
 Инструмент командной строки для шифрования и дешифрования AES-128 в режиме ECB.
 
+## Структура 
+CryptoCore/
+├── src/
+│   ├── __init__.py
+│   ├── cli_parser.py
+│   ├── crypto_core.py
+│   ├── csprng.py
+│   ├── file_io.py
+│   ├── modes/
+│   │   ├── __init__.py
+│   │   ├── cbc.py
+│   │   ├── cfb.py
+│   │   ├── ctr.py
+│   │   ├── ecb.py
+│   │   └── ofb.py
+│   └── hash/
+│       ├── __init__.py
+│       ├── sha256.py
+│       ├── sha3_256.py
+│       └── hash_core.py
+├── tests/
+│   ├── __init__.py
+│   ├── test_openssl_interop.py
+│   ├── test_roundtrip.py
+│   ├── test_csprng.py
+│   └── test_hash.py
+├── cryptocore.py
+├── requirements.txt
+├── README.md
+├── .gitignore
+
 ## Установка
 
 Установите Python 3.8+ и pip.
@@ -116,7 +147,7 @@ python cryptocore.py -algorithm aes -mode cbc -decrypt \
 
 При шифровании теперь можно опускать параметр `-key`, и CryptoCore автоматически сгенерирует криптографически стойкий случайный ключ:
 
-```bash
+
 # Шифрование с автоматической генерацией ключа
 python cryptocore.py -algorithm aes -mode cbc -encrypt \
   -input plain.txt -output cipher.bin
@@ -124,3 +155,40 @@ python cryptocore.py -algorithm aes -mode cbc -encrypt \
 # Вывод:
 # [+] Сгенерирован случайный ключ: 1a2b3c4d5e6f7890fedcba9876543210
 # [+] Файл успешно зашифрован...
+
+## Sprint 4: Хеширование файлов 
+
+Доступные алгоритмы хеширования
+sha256 - SHA-256 (реализация с нуля)
+sha3-256 - SHA3-256 (реализация с нуля)
+
+Базовое использование:
+python cryptocore.py dgst --algorithm sha256 --input document.pdf
+
+Запись хеша в файл
+python cryptocore.py dgst --algorithm sha3-256 --input backup.tar --output backup.sha3
+
+Реализованные алгоритмы хеширования
+SHA-256
+Полностью реализована с нуля согласно NIST FIPS 180-4
+
+Использует механизм Merkle-Damgård
+
+Обработка блоков по 512 бит
+
+64 раунда сжатия
+
+Поддерживает инкрементальное хеширование
+
+Обрабатывает файлы любого размера чанками
+
+SHA3-256
+Полностью реализована с нуля согласно NIST FIPS 202
+
+Использует конструкцию губки Keccak
+
+Состояние 5×5×64 бит (1600 бит)
+
+24 раунда перестановки
+
+Безопасность на основе криптографических перестановок
