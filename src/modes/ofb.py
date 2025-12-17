@@ -3,8 +3,8 @@
 С РУЧНОЙ реализацией stream cipher (требование CRY-2 Sprint 2)
 """
 
-import os
 from Crypto.Cipher import AES
+from src.csprng import generate_random_bytes
 
 
 class OFBMode:
@@ -25,7 +25,8 @@ class OFBMode:
                 raise ValueError(f"IV должен быть 16 байт. Получено: {len(iv)} байт")
             self.iv = iv
         else:
-            self.iv = os.urandom(16)
+            # Используем CSPRNG для генерации IV
+            self.iv = generate_random_bytes(16)
 
     def encrypt(self, plaintext):
         """Шифрование с ручной реализацией OFB (keystream независим от plaintext)"""
@@ -35,28 +36,23 @@ class OFBMode:
         ciphertext = b""
         feedback = self.iv  # Начинаем с IV
 
-        # Генерируем keystream блоками
+        # Генерируем keystream и шифруем
         for i in range(0, len(plaintext), self.block_size):
             block = plaintext[i:i + self.block_size]
 
             # 1. Генерируем keystream блок (шифруем feedback)
             keystream_block = self.aes_primitive.encrypt(feedback)
 
-            # 2. Обновляем feedback для следующего блока
-            feedback = keystream_block
+            # 2. XOR plaintext с keystream
+            encrypted_block = bytes(a ^ b for a, b in zip(block, keystream_block[:len(block)]))
+            ciphertext += encrypted_block
 
-            # 3. XOR plaintext с keystream
-            if len(block) < self.block_size:
-                # Частичный блок
-                encrypted_block = bytes(a ^ b for a, b in zip(block, keystream_block[:len(block)]))
-                ciphertext += encrypted_block
-            else:
-                encrypted_block = bytes(a ^ b for a, b in zip(block, keystream_block))
-                ciphertext += encrypted_block
+            # 3. Обновляем feedback для следующего блока (keystream)
+            feedback = keystream_block
 
         return self.iv + ciphertext
 
-    def decrypt(self, data):
+    def decrypt(self, data, remove_padding=False):  # Добавляем remove_padding для совместимости
         """Дешифрование OFB (такое же как шифрование)"""
         if not data:
             raise ValueError("Нельзя дешифровать пустые данные")
@@ -70,22 +66,20 @@ class OFBMode:
         plaintext = b""
         feedback = iv
 
-        # Генерируем тот же keystream
+        # Генерируем тот же keystream и дешифруем
         for i in range(0, len(ciphertext), self.block_size):
             block = ciphertext[i:i + self.block_size]
 
             # 1. Генерируем keystream блок
             keystream_block = self.aes_primitive.encrypt(feedback)
 
-            # 2. Обновляем feedback
+            # 2. XOR ciphertext с keystream
+            decrypted_block = bytes(a ^ b for a, b in zip(block, keystream_block[:len(block)]))
+            plaintext += decrypted_block
+
+            # 3. Обновляем feedback
             feedback = keystream_block
 
-            # 3. XOR ciphertext с keystream
-            if len(block) < self.block_size:
-                decrypted_block = bytes(a ^ b for a, b in zip(block, keystream_block[:len(block)]))
-                plaintext += decrypted_block
-            else:
-                decrypted_block = bytes(a ^ b for a, b in zip(block, keystream_block))
-                plaintext += decrypted_block
-
+        # OFB - потоковый режим, padding не используется
+        # remove_padding игнорируется, но параметр оставлен для совместимости
         return plaintext

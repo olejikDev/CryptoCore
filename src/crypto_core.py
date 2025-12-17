@@ -1,6 +1,6 @@
 """
 Основной класс для шифрования и дешифрования файлов
-Sprint 3: Поддержка auto-generated ключей через CSPRNG
+Sprint 4: Обновлено для правильной работы режимов
 """
 
 from src.modes.ecb import ECBMode
@@ -24,6 +24,10 @@ class CryptoCipher:
         # Sprint 3: Обработка ключа (может быть None для auto-generation)
         self.key = self._process_key(key)
         self.iv = self._parse_iv(iv) if iv else None
+
+        # Сохраняем оригинальный режим для определения padding
+        self.original_mode = mode.lower()
+
         self.cipher = self._init_cipher()
 
     def _process_key(self, key_str):
@@ -120,18 +124,27 @@ class CryptoCipher:
 
     def _decrypt_data(self, ciphertext):
         """Дешифрование данных с учетом режима"""
-        # Для ECB - просто дешифруем
+        # Для ECB
         if self.mode == 'ecb':
-            return self.cipher.decrypt(ciphertext)
+            return self.cipher.decrypt(ciphertext, remove_padding=True)
 
         # Для режимов с IV
         if self.iv:
-            # Если IV был передан в командной строке, используем его
-            return self.cipher.decrypt(ciphertext)
+            # Если IV был передан в командной строке
+            if self.mode == 'cbc':
+                # Для CBC пробуем с padding, если не получается - без padding
+                try:
+                    return self.cipher.decrypt(ciphertext, remove_padding=True)
+                except:
+                    return self.cipher.decrypt(ciphertext, remove_padding=False)
+            else:
+                # CFB, OFB, CTR - потоковые режимы без padding
+                return self.cipher.decrypt(ciphertext, remove_padding=False)
         else:
             # Если IV не был передан, читаем его из начала файла
             if len(ciphertext) < 16:
-                raise ValueError(f"Файл слишком короткий для получения IV. Требуется минимум 16 байт, получено: {len(ciphertext)} байт")
+                raise ValueError(
+                    f"Файл слишком короткий для получения IV. Требуется минимум 16 байт, получено: {len(ciphertext)} байт")
 
             # Читаем IV из файла
             file_iv = ciphertext[:16]
@@ -147,4 +160,13 @@ class CryptoCipher:
 
             cipher_class = mode_classes[self.mode]
             cipher = cipher_class(self.key, file_iv)
-            return cipher.decrypt(actual_ciphertext)
+
+            # Для CBC пробуем с padding, если не получается - без padding
+            if self.mode == 'cbc':
+                try:
+                    return cipher.decrypt(actual_ciphertext, remove_padding=True)
+                except:
+                    return cipher.decrypt(actual_ciphertext, remove_padding=False)
+            else:
+                # CFB, OFB, CTR - потоковые режимы без padding
+                return cipher.decrypt(actual_ciphertext, remove_padding=False)

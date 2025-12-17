@@ -7,6 +7,8 @@ import os
 import subprocess
 import sys
 import tempfile
+import pytest
+
 
 def run_command(cmd):
     """Запуск команды и проверка результата"""
@@ -24,6 +26,13 @@ def run_command(cmd):
     except Exception as e:
         print(f"Ошибка выполнения команды: {e}")
         return False
+
+
+# Определяем фикстуру для pytest
+@pytest.fixture(params=['ecb', 'cbc', 'cfb', 'ofb', 'ctr'])
+def mode(request):
+    """Фикстура для параметризации тестов по режимам"""
+    return request.param
 
 
 def test_mode_roundtrip(mode):
@@ -124,6 +133,7 @@ def test_mode_roundtrip(mode):
             print(f"   [-] Ошибка: {e}")
             return False
 
+
 def test_all_modes():
     """Тестирование всех режимов"""
     print("=== Тест CryptoCore (шифрование-дешифрование для всех режимов) ===")
@@ -149,6 +159,7 @@ def test_all_modes():
             all_passed = False
 
     return all_passed
+
 
 def test_cli_validation():
     """Тест валидации CLI аргументов для Sprint 2"""
@@ -178,6 +189,7 @@ def test_cli_validation():
             all_passed = False
 
     return all_passed
+
 
 if __name__ == "__main__":
     # Тестирование всех режимов

@@ -1,11 +1,10 @@
 """
 Реализация режима Cipher Feedback (CFB) для AES
 С РУЧНОЙ реализацией stream cipher (требование CRY-2 Sprint 2)
-CFB требует данные, кратные размеру блока (16 байт)
 """
 
-import os
 from Crypto.Cipher import AES
+from src.csprng import generate_random_bytes
 
 
 class CFBMode:
@@ -26,24 +25,18 @@ class CFBMode:
                 raise ValueError(f"IV должен быть 16 байт. Получено: {len(iv)} байт")
             self.iv = iv
         else:
-            self.iv = os.urandom(16)
+            # Используем CSPRNG для генерации IV
+            self.iv = generate_random_bytes(16)
 
     def encrypt(self, plaintext):
-        """Шифрование с ручной реализацией CFB (stream cipher)
-        Требование: данные должны быть кратны размеру блока (16 байт)
-        """
+        """Шифрование с ручной реализацией CFB (stream cipher)"""
         if not plaintext:
             raise ValueError("Нельзя шифровать пустые данные")
-
-        # ⚠️ ИСПРАВЛЕНО: Проверка, что данные кратны размеру блока
-        if len(plaintext) % self.block_size != 0:
-            raise ValueError(f"CFB режим требует данные, кратные {self.block_size} байтам. "
-                           f"Получено: {len(plaintext)} байт")
 
         ciphertext = b""
         shift_register = self.iv  # Начинаем с IV
 
-        # Обрабатываем данные блоками по 16 байт
+        # Обрабатываем данные блоками
         for i in range(0, len(plaintext), self.block_size):
             block = plaintext[i:i + self.block_size]
 
@@ -51,19 +44,21 @@ class CFBMode:
             keystream = self.aes_primitive.encrypt(shift_register)
 
             # 2. XOR с plaintext для получения ciphertext
-            # ⚠️ ИСПРАВЛЕНО: Убрана обработка partial blocks
-            encrypted_block = bytes(a ^ b for a, b in zip(block, keystream))
+            encrypted_block = bytes(a ^ b for a, b in zip(block, keystream[:len(block)]))
             ciphertext += encrypted_block
 
-            # 3. Обновляем shift register (в CFB это ciphertext блок)
-            shift_register = encrypted_block
+            # 3. Обновляем shift register
+            # В CFB shift register обновляется ciphertext блоком, дополненным если нужно
+            if len(encrypted_block) == self.block_size:
+                shift_register = encrypted_block
+            else:
+                # Если блок не полный, дополняем из предыдущего shift register
+                shift_register = encrypted_block + shift_register[len(encrypted_block):]
 
         return self.iv + ciphertext
 
-    def decrypt(self, data):
-        """Дешифрование с ручной реализацией CFB
-        Требование: данные должны быть кратны размеру блока (16 байт)
-        """
+    def decrypt(self, data, remove_padding=False):  # Добавляем remove_padding для совместимости
+        """Дешифрование с ручной реализацией CFB"""
         if not data:
             raise ValueError("Нельзя дешифровать пустые данные")
 
@@ -72,11 +67,6 @@ class CFBMode:
 
         iv = data[:self.block_size]
         ciphertext = data[self.block_size:]
-
-        # ⚠️ ИСПРАВЛЕНО: Проверка, что ciphertext кратен размеру блока
-        if len(ciphertext) % self.block_size != 0:
-            raise ValueError(f"Ciphertext для CFB режима должен быть кратен {self.block_size} байтам. "
-                           f"Получено: {len(ciphertext)} байт")
 
         plaintext = b""
         shift_register = iv
@@ -89,11 +79,16 @@ class CFBMode:
             keystream = self.aes_primitive.encrypt(shift_register)
 
             # 2. XOR с ciphertext для получения plaintext
-            # ⚠️ ИСПРАВЛЕНО: Убрана обработка partial blocks
-            decrypted_block = bytes(a ^ b for a, b in zip(block, keystream))
+            decrypted_block = bytes(a ^ b for a, b in zip(block, keystream[:len(block)]))
             plaintext += decrypted_block
 
-            # 3. Обновляем shift register (в CFB это ciphertext блок)
-            shift_register = block
+            # 3. Обновляем shift register
+            # В CFB при дешифровании shift register обновляется ciphertext блоком
+            if len(block) == self.block_size:
+                shift_register = block
+            else:
+                shift_register = block + shift_register[len(block):]
 
+        # CFB - потоковый режим, padding не используется
+        # remove_padding игнорируется, но параметр оставлен для совместимости
         return plaintext

@@ -43,6 +43,12 @@ class SHA256:
         self.buffer = bytearray()  # Буфер для неполных блоков
         self.block_size = 64  # Размер блока в байтах (512 бит)
 
+    def reset(self):
+        """Сброс состояния для повторного использования"""
+        self.hash_values = self.INITIAL_HASH[:]
+        self.message_length = 0
+        self.buffer = bytearray()
+
     @staticmethod
     def _right_rotate(x, n):
         """Циклический сдвиг вправо 32-битного числа"""

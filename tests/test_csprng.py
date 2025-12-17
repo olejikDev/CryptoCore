@@ -40,7 +40,7 @@ def test_key_uniqueness():
         key_set.add(key_hex)
 
     print(f"[+] Успешно сгенерировано {len(key_set)} уникальных ключей")
-    return True
+    assert len(key_set) == num_keys, f"Ожидалось {num_keys} уникальных ключей, получено {len(key_set)}"
 
 
 def test_basic_distribution():

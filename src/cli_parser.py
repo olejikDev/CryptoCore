@@ -1,6 +1,6 @@
 """
 Парсер аргументов командной строки для CryptoCore
-Sprint 3: Поддержка опционального ключа для шифрования
+Sprint 4: Добавление команды dgst для хеширования
 """
 
 import argparse
@@ -12,10 +12,50 @@ import sys
 def parse_args():
     """Разбор и валидация аргументов командной строки"""
     parser = argparse.ArgumentParser(
-        description="CryptoCore - инструмент для шифрования и дешифрования файлов с использованием AES-128",
-        add_help=False
+        description="CryptoCore - инструмент для шифрования, дешифрования и хеширования файлов",
+        add_help=False,
+        usage="cryptocore <command> [options]\n\n"
+              "Команды:\n"
+              "  Для шифрования/дешифрования: cryptocore [options]\n"
+              "  Для хеширования: cryptocore dgst [options]"
     )
 
+    # Субпарсеры для разных команд
+    subparsers = parser.add_subparsers(dest='command', help='Доступные команды')
+
+    # 1. Парсер для шифрования/дешифрования (существующий функционал)
+    crypto_parser = subparsers.add_parser('crypto', add_help=False)
+    _add_crypto_args(crypto_parser)
+
+    # 2. Парсер для хеширования (новый в Sprint 4)
+    dgst_parser = subparsers.add_parser('dgst', add_help=False)
+    _add_dgst_args(dgst_parser)
+
+    # Для обратной совместимости: если первым аргументом не является команда,
+    # предполагаем, что это аргументы для шифрования
+    if len(sys.argv) > 1 and sys.argv[1] not in ['crypto', 'dgst']:
+        # Вставляем 'crypto' как первую команду
+        sys.argv.insert(1, 'crypto')
+
+    args = parser.parse_args()
+
+    # Валидация в зависимости от команды
+    if args.command == 'dgst':
+        validate_dgst_args(args)
+    else:
+        # По умолчанию для шифрования/дешифрования
+        args.command = 'crypto'
+        validate_crypto_args(args)
+
+    # Генерация имени файла по умолчанию для шифрования
+    if args.command == 'crypto' and not args.output:
+        args.output = generate_output_filename(args.input, args.encrypt)
+
+    return args
+
+
+def _add_crypto_args(parser):
+    """Добавление аргументов для шифрования/дешифрования"""
     parser.add_argument(
         "-algorithm",
         type=str,
@@ -37,7 +77,7 @@ def parse_args():
     parser.add_argument(
         "-key",
         type=str,
-        required=False,  # ИЗМЕНЕНО: было True, стало False
+        required=False,
         help="Ключ шифрования в формате hex (16 байт = 32 hex символа). "
              "Если не указан при шифровании, будет сгенерирован случайный ключ. "
              "При дешифровании ключ обязателен."
@@ -68,26 +108,63 @@ def parse_args():
 
     parser.add_argument("-h", "--help", action="help", help="Показать это сообщение помощи")
 
-    args = parser.parse_args()
 
-    validate_args(args)
+def _add_dgst_args(parser):
+    """Добавление аргументов для команды dgst"""
+    parser.add_argument(
+        "--algorithm",
+        type=str,
+        required=True,
+        choices=['sha256', 'sha3-256'],
+        help="Алгоритм хеширования (sha256, sha3-256)"
+    )
 
-    # Sprint 2: Обработка IV согласно требованиям
-    if args.mode.lower() != 'ecb':
-        # Для не-ECB режимов
-        if args.encrypt and args.iv:
-            # ⚠️ ИСПРАВЛЕНО: Теперь ошибка, а не warning
-            print_error("Аргумент --iv не принимается при шифровании. IV генерируется автоматически.")
+    parser.add_argument(
+        "--input",
+        type=str,
+        required=True,
+        help="Путь к файлу для хеширования"
+    )
 
-    if not args.output:
-        args.output = generate_output_filename(args.input, args.encrypt)
+    parser.add_argument(
+        "--output",
+        type=str,
+        required=False,
+        help="Путь к файлу для записи хеша (если не указан, хеш выводится в stdout)"
+    )
 
-    return args
+    # Sprint 5: Добавляем аргументы для HMAC
+    parser.add_argument(
+        "--hmac",
+        action="store_true",
+        help="Включить режим HMAC для аутентификации сообщений"
+    )
 
+    parser.add_argument(
+        "--key",
+        type=str,
+        required=False,
+        help="Ключ для HMAC в формате hex (обязателен при использовании --hmac)"
+    )
 
-def validate_args(args):
-    """Валидация всех аргументов"""
+    parser.add_argument(
+        "--verify",
+        type=str,
+        required=False,
+        help="Путь к файлу с ожидаемым HMAC для проверки"
+    )
 
+    parser.add_argument(
+        "--cmac",
+        action="store_true",
+        help="Использовать AES-CMAC вместо HMAC (требует --key)"
+    )
+
+    parser.add_argument("-h", "--help", action="help", help="Показать сообщение помощи для команды dgst")
+
+def validate_crypto_args(args):
+    """Валидация аргументов для шифрования/дешифрования"""
+    # Существующая валидация из предыдущих спринтов
     if args.algorithm.lower() != "aes":
         print_error(f"Неподдерживаемый алгоритм: '{args.algorithm}'. Поддерживается только 'aes'.")
 
@@ -95,31 +172,81 @@ def validate_args(args):
     if args.mode.lower() not in valid_modes:
         print_error(f"Неподдерживаемый режим: '{args.mode}'. Поддерживается: {', '.join(valid_modes)}.")
 
-    # Sprint 3: Проверка ключа (теперь опционально)
+    # Sprint 3: Проверка ключа
     if args.key:
         validate_key(args.key)
-        # Sprint 3: Проверка слабых ключей (требование CLI-5)
         check_weak_key(args.key)
     elif args.encrypt:
-        # При шифровании без ключа - ключ будет сгенерирован (новое в Sprint 3)
-        pass
+        pass  # Ключ будет сгенерирован
     else:
-        # При дешифровании ключ обязателен (требование CLI-4)
         print_error("Ключ обязателен для дешифрования. Используйте -key для указания ключа.")
 
-    # Sprint 2: Проверка IV
     if args.iv:
         validate_iv(args.iv)
 
-    # Sprint 2: Дополнительная проверка для ECB режима
     if args.mode.lower() == 'ecb' and args.iv:
         print_error("Аргумент --iv не поддерживается в режиме ECB.")
 
     validate_input_file(args.input)
 
 
+def validate_dgst_args(args):
+    """Валидация аргументов для команды dgst"""
+    validate_input_file(args.input)
+
+    # Проверяем, что файл существует и доступен для чтения
+    if not os.path.exists(args.input):
+        print_error(f"Входной файл не найден: '{args.input}'")
+
+    if not os.access(args.input, os.R_OK):
+        print_error(f"Нет прав на чтение файла: '{args.input}'")
+
+    # Sprint 5: Валидация аргументов HMAC
+    if args.hmac or args.cmac:
+        if not args.key:
+            print_error("Аргумент --key обязателен при использовании --hmac или --cmac")
+
+        # Проверяем формат ключа
+        try:
+            key_bytes = bytes.fromhex(args.key)
+            if args.hmac and len(key_bytes) == 0:
+                print_error("Ключ для HMAC не может быть пустым")
+        except ValueError:
+            print_error(f"Некорректный формат ключа: '{args.key}'. Ожидается hex строка")
+
+        # CMAC требует ключ AES
+        if args.cmac and len(key_bytes) not in [16, 24, 32]:
+            print_error("Для AES-CMAC ключ должен быть 16, 24 или 32 байта (32, 48 или 64 hex символа)")
+
+    # Проверяем, что не указаны одновременно hmac и cmac
+    if args.hmac and args.cmac:
+        print_error("Нельзя использовать одновременно --hmac и --cmac. Выберите один вариант")
+
+
+def validate_key(key):
+    """Валидация ключа шифрования"""
+    clean_key = key.lstrip('@')
+
+    if len(clean_key) != 32:
+        print_error(f"Некорректная длина ключа: {len(clean_key)} символов. Требуется 32 hex символа (16 байт).")
+
+    hex_pattern = re.compile(r'^[0-9a-fA-F]{32}$')
+    if not hex_pattern.match(clean_key):
+        print_error(f"Ключ должен содержать только hex символы (0-9, a-f, A-F).")
+
+
+def validate_iv(iv):
+    """Валидация вектора инициализации"""
+    if len(iv) != 32:
+        print_error(f"Некорректная длина IV: {len(iv)} символов. Требуется 32 hex символа (16 байт).")
+
+    hex_pattern = re.compile(r'^[0-9a-fA-F]{32}$')
+    if not hex_pattern.match(iv):
+        print_error(f"IV должен содержать только hex символы (0-9, a-f, A-F).")
+
+
 def check_weak_key(key_str):
-    """Проверка слабых ключей (требование CLI-5)"""
+    """Проверка слабых ключей (требование CLI-5 Sprint 3)"""
     clean_key = key_str.lstrip('@')
 
     try:
@@ -147,37 +274,15 @@ def check_weak_key(key_str):
         pass  # Если не можем проверить, пропускаем
 
 
-def validate_key(key):
-    """Валидация ключа"""
-    clean_key = key.lstrip('@')
-
-    if len(clean_key) != 32:
-        print_error(f"Некорректная длина ключа: {len(clean_key)} символов. Требуется 32 hex символа (16 байт).")
-
-    hex_pattern = re.compile(r'^[0-9a-fA-F]{32}$')
-    if not hex_pattern.match(clean_key):
-        print_error(f"Ключ должен содержать только hex символы (0-9, a-f, A-F).")
-
-
-def validate_iv(iv):
-    """Валидация вектора инициализации"""
-    if len(iv) != 32:
-        print_error(f"Некорректная длина IV: {len(iv)} символов. Требуется 32 hex символа (16 байт).")
-
-    hex_pattern = re.compile(r'^[0-9a-fA-F]{32}$')
-    if not hex_pattern.match(iv):
-        print_error(f"IV должен содержать только hex символы (0-9, a-f, A-F).")
-
-
 def validate_input_file(filepath):
     """Валидация входного файла"""
-    if not os.path.exists(filepath):
+    if filepath != '-' and not os.path.exists(filepath):
         print_error(f"Входной файл не найден: '{filepath}'")
 
-    if not os.path.isfile(filepath):
+    if filepath != '-' and not os.path.isfile(filepath):
         print_error(f"'{filepath}' не является файлом")
 
-    if not os.access(filepath, os.R_OK):
+    if filepath != '-' and not os.access(filepath, os.R_OK):
         print_error(f"Нет прав на чтение файла: '{filepath}'")
 
 

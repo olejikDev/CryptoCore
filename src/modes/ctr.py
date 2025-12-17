@@ -3,8 +3,8 @@
 С РУЧНОЙ реализацией counter механизма (требование CRY-2 Sprint 2)
 """
 
-import os
 from Crypto.Cipher import AES
+from src.csprng import generate_random_bytes
 
 
 class CTRMode:
@@ -23,17 +23,16 @@ class CTRMode:
         if iv:
             if len(iv) != 16:
                 raise ValueError(f"IV должен быть 16 байт. Получено: {len(iv)} байт")
-            self.iv = iv
+            self.nonce = iv[:8]  # Первые 8 байт - nonce
+            self.counter = int.from_bytes(iv[8:], 'big')  # Последние 8 байт - счетчик
         else:
-            # Генерируем случайный nonce (первые 8 байт)
-            self.iv = os.urandom(16)
+            # Используем CSPRNG для генерации nonce
+            self.nonce = generate_random_bytes(8)
+            self.counter = 0
 
-    def _increment_counter(self, counter_bytes):
-        """Инкремент счетчика (big-endian)"""
-        # Преобразуем bytes в int, инкрементируем, обратно в bytes
-        counter_int = int.from_bytes(counter_bytes, byteorder='big')
-        counter_int += 1
-        return counter_int.to_bytes(len(counter_bytes), byteorder='big')
+    def _get_counter_bytes(self):
+        """Получить текущее значение счетчика в виде байтов"""
+        return self.nonce + self.counter.to_bytes(8, 'big')
 
     def encrypt(self, plaintext):
         """Шифрование с ручной реализацией CTR"""
@@ -41,59 +40,63 @@ class CTRMode:
             raise ValueError("Нельзя шифровать пустые данные")
 
         ciphertext = b""
-        # Используем IV как начальное значение счетчика
-        counter = self.iv
+        current_counter = self.counter
 
-        # Обрабатываем данные блоками
+        # Шифруем данные
         for i in range(0, len(plaintext), self.block_size):
             block = plaintext[i:i + self.block_size]
 
-            # 1. Шифруем текущее значение счетчика
-            keystream_block = self.aes_primitive.encrypt(counter)
+            # 1. Получаем текущее значение счетчика
+            counter_bytes = self.nonce + current_counter.to_bytes(8, 'big')
 
-            # 2. Инкрементируем счетчик для следующего блока
-            counter = self._increment_counter(counter)
+            # 2. Шифруем счетчик для получения keystream
+            keystream_block = self.aes_primitive.encrypt(counter_bytes)
 
             # 3. XOR plaintext с keystream
-            if len(block) < self.block_size:
-                encrypted_block = bytes(a ^ b for a, b in zip(block, keystream_block[:len(block)]))
-                ciphertext += encrypted_block
-            else:
-                encrypted_block = bytes(a ^ b for a, b in zip(block, keystream_block))
-                ciphertext += encrypted_block
+            encrypted_block = bytes(a ^ b for a, b in zip(block, keystream_block[:len(block)]))
+            ciphertext += encrypted_block
 
-        return self.iv + ciphertext
+            # 4. Инкрементируем счетчик
+            current_counter += 1
 
-    def decrypt(self, data):
+        # Сохраняем начальный counter для IV
+        iv = self.nonce + self.counter.to_bytes(8, 'big')
+        return iv + ciphertext
+
+    def decrypt(self, data, remove_padding=False):  # Добавляем remove_padding для совместимости
         """Дешифрование CTR (такое же как шифрование)"""
         if not data:
             raise ValueError("Нельзя дешифровать пустые данные")
 
         if len(data) < self.block_size:
-            raise ValueError(f"Данные слишком короткие для CTR режима. Минимум {self.block_size} байт (nonce)")
+            raise ValueError(f"Данные слишком короткие для CTR режима. Минимум {self.block_size} байт (nonce+counter)")
 
-        iv = data[:self.block_size]
-        ciphertext = data[self.block_size:]
+        # Извлекаем nonce и начальный счетчик
+        iv = data[:16]
+        nonce = iv[:8]
+        initial_counter = int.from_bytes(iv[8:], 'big')
+        ciphertext = data[16:]
 
         plaintext = b""
-        counter = iv
+        current_counter = initial_counter
 
-        # Генерируем тот же keystream
+        # Дешифруем данные
         for i in range(0, len(ciphertext), self.block_size):
             block = ciphertext[i:i + self.block_size]
 
-            # 1. Шифруем текущее значение счетчика
-            keystream_block = self.aes_primitive.encrypt(counter)
+            # 1. Получаем текущее значение счетчика
+            counter_bytes = nonce + current_counter.to_bytes(8, 'big')
 
-            # 2. Инкрементируем счетчик
-            counter = self._increment_counter(counter)
+            # 2. Шифруем счетчик для получения keystream
+            keystream_block = self.aes_primitive.encrypt(counter_bytes)
 
             # 3. XOR ciphertext с keystream
-            if len(block) < self.block_size:
-                decrypted_block = bytes(a ^ b for a, b in zip(block, keystream_block[:len(block)]))
-                plaintext += decrypted_block
-            else:
-                decrypted_block = bytes(a ^ b for a, b in zip(block, keystream_block))
-                plaintext += decrypted_block
+            decrypted_block = bytes(a ^ b for a, b in zip(block, keystream_block[:len(block)]))
+            plaintext += decrypted_block
 
+            # 4. Инкрементируем счетчик
+            current_counter += 1
+
+        # CTR - потоковый режим, padding не используется
+        # remove_padding игнорируется, но параметр оставлен для совместимости
         return plaintext

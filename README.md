@@ -2,37 +2,6 @@
 
 Инструмент командной строки для шифрования и дешифрования AES-128 в режиме ECB.
 
-## Структура 
-CryptoCore/
-├── src/
-│   ├── __init__.py
-│   ├── cli_parser.py
-│   ├── crypto_core.py
-│   ├── csprng.py
-│   ├── file_io.py
-│   ├── modes/
-│   │   ├── __init__.py
-│   │   ├── cbc.py
-│   │   ├── cfb.py
-│   │   ├── ctr.py
-│   │   ├── ecb.py
-│   │   └── ofb.py
-│   └── hash/
-│       ├── __init__.py
-│       ├── sha256.py
-│       ├── sha3_256.py
-│       └── hash_core.py
-├── tests/
-│   ├── __init__.py
-│   ├── test_openssl_interop.py
-│   ├── test_roundtrip.py
-│   ├── test_csprng.py
-│   └── test_hash.py
-├── cryptocore.py
-├── requirements.txt
-├── README.md
-├── .gitignore
-
 ## Установка
 
 Установите Python 3.8+ и pip.
@@ -180,7 +149,6 @@ SHA-256
 
 Поддерживает инкрементальное хеширование
 
-Обрабатывает файлы любого размера чанками
 
 SHA3-256
 Полностью реализована с нуля согласно NIST FIPS 202

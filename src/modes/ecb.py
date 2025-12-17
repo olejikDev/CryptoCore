@@ -42,7 +42,7 @@ class ECBMode:
 
         return ciphertext
 
-    def decrypt(self, ciphertext):
+    def decrypt(self, ciphertext, remove_padding=True):  # Добавляем remove_padding для совместимости
         """Дешифрование данных в режиме ECB с РУЧНОЙ обработкой блоков"""
         if not ciphertext:
             raise ValueError("Нельзя дешифровать пустые данные")
@@ -64,7 +64,14 @@ class ECBMode:
             # 4. Сборка результатов
             padded_plaintext += decrypted_block
 
-        # 5. Удаление padding
-        plaintext = unpad(padded_plaintext, self.block_size)
+        # 5. Удаление padding (если требуется)
+        if remove_padding:
+            try:
+                plaintext = unpad(padded_plaintext, self.block_size)
+            except ValueError:
+                # Если padding неверный, возвращаем как есть
+                plaintext = padded_plaintext
+        else:
+            plaintext = padded_plaintext
 
         return plaintext

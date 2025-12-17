@@ -42,6 +42,14 @@ class SHA3_256:
         self.buffer = bytearray()
         self._is_finalized = False
 
+    def reset(self):
+        """Сброс состояния для повторного использования"""
+        self.state = [[0] * 5 for _ in range(5)]
+        self.buffer = bytearray()
+        self._is_finalized = False
+        if hasattr(self, '_final_hash'):
+            delattr(self, '_final_hash')
+
     @staticmethod
     def _rotate_left_64(x, n):
         """Циклический сдвиг 64-битного числа влево"""
