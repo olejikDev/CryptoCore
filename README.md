@@ -149,7 +149,6 @@ SHA-256
 
 Поддерживает инкрементальное хеширование
 
-
 SHA3-256
 Полностью реализована с нуля согласно NIST FIPS 202
 
@@ -160,3 +159,38 @@ SHA3-256
 24 раунда перестановки
 
 Безопасность на основе криптографических перестановок
+
+## Sprint 5: 
+
+Реализация кодов аутентификации сообщений для проверки целостности и подлинности данных.
+
+### HMAC (Hash-based Message Authentication Code)
+
+Использует SHA-256 и следует RFC 2104. Поддерживает ключи переменной длины.
+
+#### Генерация HMAC:
+
+python cryptocore.py dgst --algorithm sha256 --hmac \
+  --key 00112233445566778899aabbccddeeff \
+  --input document.txt \
+  --output document.hmac
+
+## Проверка HMAC:
+python cryptocore.py dgst --algorithm sha256 --hmac \
+  --key 00112233445566778899aabbccddeeff \
+  --input document.txt \
+  --verify document.hmac
+
+## Формат вывода:
+a1b2c3d4e5f6789012345678901234567890123456789012345678901234567890 document.txt
+
+## Генерация CMAC:
+python cryptocore.py dgst --cmac \
+  --key 00112233445566778899aabbccddeeff \
+  --input data.bin
+
+## Тестирование
+Запуск unit-тестов:
+python -m pytest tests/test_mac.py -v
+python -m pytest tests/test_cli_mac.py -v
+
