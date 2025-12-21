@@ -1,303 +1,301 @@
+#!/usr/bin/env python3
 """
-Парсер аргументов командной строки для CryptoCore
-Sprint 4: Добавление команды dgst для хеширования
+CLI Parser for CryptoCore
+Handles command line arguments for all sprints (1-6)
 """
 
 import argparse
-import os
-import re
 import sys
+from typing import Optional, List, Tuple
 
 
-def parse_args():
-    """Разбор и валидация аргументов командной строки"""
+def parse_args(args: Optional[List[str]] = None):
+    """
+    Parse command line arguments for CryptoCore
+
+    Args:
+        args: List of command line arguments (defaults to sys.argv[1:])
+
+    Returns:
+        argparse.Namespace: Parsed arguments
+    """
     parser = argparse.ArgumentParser(
-        description="CryptoCore - инструмент для шифрования, дешифрования и хеширования файлов",
-        add_help=False,
-        usage="cryptocore <command> [options]\n\n"
-              "Команды:\n"
-              "  Для шифрования/дешифрования: cryptocore [options]\n"
-              "  Для хеширования: cryptocore dgst [options]"
+        prog='cryptocore',
+        description='CryptoCore - A comprehensive cryptographic toolkit',
+        epilog="""
+Examples:
+  # AES-GCM encryption with AAD
+  cryptocore --algorithm aes --mode gcm --encrypt --key 001122... --input file.txt --output file.enc --aad aabbcc
+  
+  # AES-GCM decryption
+  cryptocore --algorithm aes --mode gcm --decrypt --key 001122... --input file.enc --output file.txt --aad aabbcc
+  
+  # Hash computation
+  cryptocore dgst --algorithm sha256 --input file.txt
+  
+  # HMAC computation
+  cryptocore dgst --algorithm sha256 --hmac --key 001122... --input file.txt
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
-    # Субпарсеры для разных команд
-    subparsers = parser.add_subparsers(dest='command', help='Доступные команды')
-
-    # 1. Парсер для шифрования/дешифрования (существующий функционал)
-    crypto_parser = subparsers.add_parser('crypto', add_help=False)
-    _add_crypto_args(crypto_parser)
-
-    # 2. Парсер для хеширования (новый в Sprint 4)
-    dgst_parser = subparsers.add_parser('dgst', add_help=False)
-    _add_dgst_args(dgst_parser)
-
-    # Для обратной совместимости: если первым аргументом не является команда,
-    # предполагаем, что это аргументы для шифрования
-    if len(sys.argv) > 1 and sys.argv[1] not in ['crypto', 'dgst']:
-        # Вставляем 'crypto' как первую команду
-        sys.argv.insert(1, 'crypto')
-
-    args = parser.parse_args()
-
-    # Валидация в зависимости от команды
-    if args.command == 'dgst':
-        validate_dgst_args(args)
-    else:
-        # По умолчанию для шифрования/дешифрования
-        args.command = 'crypto'
-        validate_crypto_args(args)
-
-    # Генерация имени файла по умолчанию для шифрования
-    if args.command == 'crypto' and not args.output:
-        args.output = generate_output_filename(args.input, args.encrypt)
-
-    return args
-
-
-def _add_crypto_args(parser):
-    """Добавление аргументов для шифрования/дешифрования"""
+    # ===== MAIN ENCRYPTION/DECRYPTION ARGUMENTS =====
     parser.add_argument(
-        "-algorithm",
-        type=str,
+        '--algorithm',
+        choices=['aes'],
+        default='aes',
+        help='Encryption algorithm (default: aes)'
+    )
+
+    parser.add_argument(
+        '--mode',
+        choices=['ecb', 'cbc', 'cfb', 'ofb', 'ctr', 'gcm'],
+        default='ecb',
+        help='Mode of operation (default: ecb)'
+    )
+
+    # Operation type (encrypt/decrypt)
+    operation_group = parser.add_mutually_exclusive_group(required=False)
+    operation_group.add_argument(
+        '--encrypt',
+        action='store_true',
+        help='Perform encryption'
+    )
+    operation_group.add_argument(
+        '--decrypt',
+        action='store_true',
+        help='Perform decryption'
+    )
+
+    # Key and input/output
+    parser.add_argument(
+        '--key',
+        help='Encryption key as hexadecimal string (optional for encryption)'
+    )
+
+    parser.add_argument(
+        '--input', '-i',
         required=True,
-        help="Алгоритм шифрования (поддерживается только 'aes')"
+        help='Input file path (use "-" for stdin)'
     )
 
     parser.add_argument(
-        "-mode",
-        type=str,
-        required=True,
-        help="Режим работы (поддерживается: 'ecb', 'cbc', 'cfb', 'ofb', 'ctr')"
+        '--output', '-o',
+        help='Output file path (optional, uses stdout if not specified)'
     )
 
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("-encrypt", action="store_true", help="Выполнить шифрование файла")
-    group.add_argument("-decrypt", action="store_true", help="Выполнить дешифрование файла")
-
-    parser.add_argument(
-        "-key",
-        type=str,
-        required=False,
-        help="Ключ шифрования в формате hex (16 байт = 32 hex символа). "
-             "Если не указан при шифровании, будет сгенерирован случайный ключ. "
-             "При дешифровании ключ обязателен."
+    # ===== GCM-SPECIFIC ARGUMENTS (SPRINT 6) =====
+    gcm_group = parser.add_argument_group('GCM mode options')
+    gcm_group.add_argument(
+        '--aad',
+        help='Additional Authenticated Data for GCM mode (hex string)'
     )
 
-    parser.add_argument(
-        "-iv",
-        type=str,
-        required=False,
-        help="Вектор инициализации в формате hex (16 байт = 32 hex символа). "
-             "Требуется только при дешифровании в режимах CBC, CFB, OFB, CTR "
-             "если IV не записан в начале файла"
+    # Nonce/IV handling
+    iv_group = parser.add_argument_group('IV/Nonce options')
+    iv_group.add_argument(
+        '--iv',
+        help='Initialization Vector for decryption (hex string). For GCM, use as nonce.'
+    )
+    iv_group.add_argument(
+        '--nonce',
+        help='Nonce for GCM mode (hex string). Overrides --iv if both specified.'
     )
 
+    # ===== HASH/HMAC COMMAND (SPRINTS 4-5) =====
     parser.add_argument(
-        "-input",
-        type=str,
-        required=True,
-        help="Путь к входному файлу"
+        'dgst',
+        nargs='?',
+        help='Compute message digest (hash)'
     )
 
-    parser.add_argument(
-        "-output",
-        type=str,
-        required=False,
-        help="Путь к выходному файлу (если не указан, будет сгенерирован автоматически)"
+    hash_group = parser.add_argument_group('Hash/HMAC options')
+    hash_group.add_argument(
+        '--hash-algorithm',
+        choices=['sha256', 'sha3_256', 'blake2'],
+        default='sha256',
+        help='Hash algorithm for dgst command (default: sha256)'
     )
 
-    parser.add_argument("-h", "--help", action="help", help="Показать это сообщение помощи")
-
-
-def _add_dgst_args(parser):
-    """Добавление аргументов для команды dgst"""
-    parser.add_argument(
-        "--algorithm",
-        type=str,
-        required=True,
-        choices=['sha256', 'sha3-256'],
-        help="Алгоритм хеширования (sha256, sha3-256)"
+    hash_group.add_argument(
+        '--hmac',
+        action='store_true',
+        help='Enable HMAC mode for dgst command'
     )
 
+    hash_group.add_argument(
+        '--verify',
+        help='Verify HMAC against file'
+    )
+
+    # ===== OPTIONAL FLAGS =====
     parser.add_argument(
-        "--input",
-        type=str,
-        required=True,
-        help="Путь к файлу для хеширования"
+        '--verbose', '-v',
+        action='store_true',
+        help='Enable verbose output'
     )
 
     parser.add_argument(
-        "--output",
-        type=str,
-        required=False,
-        help="Путь к файлу для записи хеша (если не указан, хеш выводится в stdout)"
+        '--quiet', '-q',
+        action='store_true',
+        help='Suppress non-essential output'
     )
 
-    # Sprint 5: Добавляем аргументы для HMAC
-    parser.add_argument(
-        "--hmac",
-        action="store_true",
-        help="Включить режим HMAC для аутентификации сообщений"
-    )
+    # Parse arguments
+    parsed_args = parser.parse_args(args)
 
-    parser.add_argument(
-        "--key",
-        type=str,
-        required=False,
-        help="Ключ для HMAC в формате hex (обязателен при использовании --hmac)"
-    )
+    # Post-validation
+    validate_args(parsed_args)
 
-    parser.add_argument(
-        "--verify",
-        type=str,
-        required=False,
-        help="Путь к файлу с ожидаемым HMAC для проверки"
-    )
+    return parsed_args
 
-    parser.add_argument(
-        "--cmac",
-        action="store_true",
-        help="Использовать AES-CMAC вместо HMAC (требует --key)"
-    )
 
-    parser.add_argument("-h", "--help", action="help", help="Показать сообщение помощи для команды dgst")
+def validate_args(args):
+    """
+    Validate parsed arguments
 
-def validate_crypto_args(args):
-    """Валидация аргументов для шифрования/дешифрования"""
-    # Существующая валидация из предыдущих спринтов
-    if args.algorithm.lower() != "aes":
-        print_error(f"Неподдерживаемый алгоритм: '{args.algorithm}'. Поддерживается только 'aes'.")
+    Args:
+        args: Parsed arguments
 
-    valid_modes = ['ecb', 'cbc', 'cfb', 'ofb', 'ctr']
-    if args.mode.lower() not in valid_modes:
-        print_error(f"Неподдерживаемый режим: '{args.mode}'. Поддерживается: {', '.join(valid_modes)}.")
+    Raises:
+        SystemExit: If arguments are invalid
+    """
+    # Check for dgst command
+    if args.dgst is not None:
+        # For dgst command, we don't need encrypt/decrypt flags
+        if args.encrypt or args.decrypt:
+            print("ERROR: Cannot use --encrypt/--decrypt with dgst command", file=sys.stderr)
+            sys.exit(1)
 
-    # Sprint 3: Проверка ключа
+        # HMAC requires key
+        if args.hmac and not args.key:
+            print("ERROR: --key is required when using --hmac", file=sys.stderr)
+            sys.exit(1)
+
+        # Verify requires HMAC
+        if args.verify and not args.hmac:
+            print("ERROR: --verify requires --hmac", file=sys.stderr)
+            sys.exit(1)
+
+        return  # Skip encryption/decryption validation
+
+    # ===== VALIDATION FOR ENCRYPTION/DECRYPTION =====
+
+    # Check operation type
+    if not args.encrypt and not args.decrypt:
+        print("ERROR: Either --encrypt or --decrypt must be specified", file=sys.stderr)
+        sys.exit(1)
+
+    # Check key for decryption
+    if args.decrypt and not args.key and args.mode != 'gcm':
+        print("ERROR: --key is required for decryption", file=sys.stderr)
+        sys.exit(1)
+
+    # ===== GCM-SPECIFIC VALIDATION =====
+    if args.mode == 'gcm':
+        # Validate AAD
+        if args.aad:
+            try:
+                bytes.fromhex(args.aad)
+            except ValueError:
+                print(f"ERROR: Invalid AAD hex string: {args.aad}", file=sys.stderr)
+                sys.exit(1)
+
+        # Validate nonce/IV
+        if args.nonce:
+            try:
+                nonce_bytes = bytes.fromhex(args.nonce)
+                if len(nonce_bytes) != 12:
+                    print(f"WARNING: GCM nonce is recommended to be 12 bytes, got {len(nonce_bytes)}",
+                          file=sys.stderr)
+            except ValueError:
+                print(f"ERROR: Invalid nonce hex string: {args.nonce}", file=sys.stderr)
+                sys.exit(1)
+
+        if args.iv:
+            try:
+                bytes.fromhex(args.iv)
+            except ValueError:
+                print(f"ERROR: Invalid IV hex string: {args.iv}", file=sys.stderr)
+                sys.exit(1)
+
+        # Warn if nonce/IV provided during encryption
+        if args.encrypt and (args.nonce or args.iv):
+            print("WARNING: --nonce/--iv should not be provided during GCM encryption",
+                  file=sys.stderr)
+
+    # ===== GENERAL VALIDATION =====
+
+    # Validate key
     if args.key:
-        validate_key(args.key)
-        check_weak_key(args.key)
-    elif args.encrypt:
-        pass  # Ключ будет сгенерирован
-    else:
-        print_error("Ключ обязателен для дешифрования. Используйте -key для указания ключа.")
-
-    if args.iv:
-        validate_iv(args.iv)
-
-    if args.mode.lower() == 'ecb' and args.iv:
-        print_error("Аргумент --iv не поддерживается в режиме ECB.")
-
-    validate_input_file(args.input)
-
-
-def validate_dgst_args(args):
-    """Валидация аргументов для команды dgst"""
-    validate_input_file(args.input)
-
-    # Проверяем, что файл существует и доступен для чтения
-    if not os.path.exists(args.input):
-        print_error(f"Входной файл не найден: '{args.input}'")
-
-    if not os.access(args.input, os.R_OK):
-        print_error(f"Нет прав на чтение файла: '{args.input}'")
-
-    # Sprint 5: Валидация аргументов HMAC
-    if args.hmac or args.cmac:
-        if not args.key:
-            print_error("Аргумент --key обязателен при использовании --hmac или --cmac")
-
-        # Проверяем формат ключа
         try:
             key_bytes = bytes.fromhex(args.key)
-            if args.hmac and len(key_bytes) == 0:
-                print_error("Ключ для HMAC не может быть пустым")
+            if args.algorithm == 'aes':
+                if len(key_bytes) not in [16, 24, 32]:
+                    print(f"ERROR: AES key must be 16, 24, or 32 bytes, got {len(key_bytes)}",
+                          file=sys.stderr)
+                    sys.exit(1)
         except ValueError:
-            print_error(f"Некорректный формат ключа: '{args.key}'. Ожидается hex строка")
+            print(f"ERROR: Invalid key hex string: {args.key}", file=sys.stderr)
+            sys.exit(1)
 
-        # CMAC требует ключ AES
-        if args.cmac and len(key_bytes) not in [16, 24, 32]:
-            print_error("Для AES-CMAC ключ должен быть 16, 24 или 32 байта (32, 48 или 64 hex символа)")
-
-    # Проверяем, что не указаны одновременно hmac и cmac
-    if args.hmac and args.cmac:
-        print_error("Нельзя использовать одновременно --hmac и --cmac. Выберите один вариант")
+    # Check input/output
+    if args.input == args.output and args.input != '-':
+        print("ERROR: Input and output cannot be the same file", file=sys.stderr)
+        sys.exit(1)
 
 
-def validate_key(key):
-    """Валидация ключа шифрования"""
-    clean_key = key.lstrip('@')
+def get_aad_bytes(args) -> bytes:
+    """
+    Get AAD bytes from arguments
 
-    if len(clean_key) != 32:
-        print_error(f"Некорректная длина ключа: {len(clean_key)} символов. Требуется 32 hex символа (16 байт).")
+    Args:
+        args: Parsed arguments
 
-    hex_pattern = re.compile(r'^[0-9a-fA-F]{32}$')
-    if not hex_pattern.match(clean_key):
-        print_error(f"Ключ должен содержать только hex символы (0-9, a-f, A-F).")
-
-
-def validate_iv(iv):
-    """Валидация вектора инициализации"""
-    if len(iv) != 32:
-        print_error(f"Некорректная длина IV: {len(iv)} символов. Требуется 32 hex символа (16 байт).")
-
-    hex_pattern = re.compile(r'^[0-9a-fA-F]{32}$')
-    if not hex_pattern.match(iv):
-        print_error(f"IV должен содержать только hex символы (0-9, a-f, A-F).")
+    Returns:
+        bytes: AAD bytes (empty if not specified)
+    """
+    if args.aad:
+        return bytes.fromhex(args.aad)
+    return b""
 
 
-def check_weak_key(key_str):
-    """Проверка слабых ключей (требование CLI-5 Sprint 3)"""
-    clean_key = key_str.lstrip('@')
+def get_nonce_bytes(args, from_data: bytes = None) -> Tuple[bytes, bytes]:
+    """
+    Get nonce bytes from arguments or data
 
-    try:
-        key_bytes = bytes.fromhex(clean_key)
+    Args:
+        args: Parsed arguments
+        from_data: Data to extract nonce from (if not in args)
 
-        # Проверка на все нули
-        if all(b == 0 for b in key_bytes):
-            print(f"[!] Предупреждение: Используется слабый ключ (все нули)")
+    Returns:
+        tuple: (nonce_bytes, remaining_data)
+    """
+    # Priority: --nonce > --iv > from_data > None
+    if args.nonce:
+        nonce = bytes.fromhex(args.nonce)
+        return nonce, from_data
 
-        # Проверка на последовательные байты
-        is_sequential = True
-        for i in range(1, len(key_bytes)):
-            if key_bytes[i] != key_bytes[i-1] + 1:
-                is_sequential = False
-                break
+    if args.iv:
+        nonce = bytes.fromhex(args.iv)
+        return nonce, from_data
 
-        if is_sequential:
-            print(f"[!] Предупреждение: Используется слабый ключ (последовательные байты)")
+    if from_data and len(from_data) >= 12:
+        nonce = from_data[:12]
+        remaining = from_data[12:]
+        return nonce, remaining
 
-        # Проверка на одинаковые байты
-        if all(b == key_bytes[0] for b in key_bytes):
-            print(f"[!] Предупреждение: Используется слабый ключ (все байты одинаковые)")
-
-    except:
-        pass  # Если не можем проверить, пропускаем
-
-
-def validate_input_file(filepath):
-    """Валидация входного файла"""
-    if filepath != '-' and not os.path.exists(filepath):
-        print_error(f"Входной файл не найден: '{filepath}'")
-
-    if filepath != '-' and not os.path.isfile(filepath):
-        print_error(f"'{filepath}' не является файлом")
-
-    if filepath != '-' and not os.access(filepath, os.R_OK):
-        print_error(f"Нет прав на чтение файла: '{filepath}'")
+    return None, from_data
 
 
-def generate_output_filename(input_file, is_encrypt):
-    """Генерация имени выходного файла по умолчанию"""
-    if is_encrypt:
-        return f"{input_file}.enc"
-    else:
-        if input_file.endswith('.enc'):
-            return f"{input_file[:-4]}.dec"
-        else:
-            return f"{input_file}.dec"
+def print_help():
+    """Print help message"""
+    parse_args(['--help'])
 
 
-def print_error(message):
-    """Вывод ошибки и завершение программы"""
-    print(f"Ошибка: {message}", file=sys.stderr)
-    sys.exit(1)
+if __name__ == "__main__":
+    # Test the parser
+    args = parse_args()
+    print("Parsed arguments:")
+    for arg in vars(args):
+        print(f"  {arg}: {getattr(args, arg)}")

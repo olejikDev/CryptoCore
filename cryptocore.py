@@ -2,7 +2,7 @@
 """
 CryptoCore - CLI инструмент для шифрования/дешифрования и хеширования файлов
 Главный исполняемый файл
-Sprint 4: Добавление команды dgst для хеширования
+Sprint 6: Добавление GCM и Encrypt-then-MAC
 """
 
 import sys
@@ -10,6 +10,8 @@ import os
 from src.cli_parser import parse_args
 from src.crypto_core import CryptoCipher
 from src.hash.hash_core import HashCore
+from src.modes.gcm import GCM, AuthenticationError
+from src.modes.aead import EncryptThenMAC
 
 
 def main():
@@ -25,6 +27,9 @@ def main():
             # Обработка шифрования/дешифрования
             _handle_crypto_command(args)
 
+    except AuthenticationError as e:
+        print(f"[-] Ошибка аутентификации: {e}", file=sys.stderr)
+        sys.exit(1)
     except Exception as e:
         print(f"[-] Ошибка: {e}", file=sys.stderr)
         sys.exit(1)
@@ -32,6 +37,16 @@ def main():
 
 def _handle_crypto_command(args):
     """Обработка команды шифрования/дешифрования"""
+    # Sprint 6: Проверяем, не используется ли GCM или AEAD
+    if args.mode == 'gcm':
+        _handle_gcm_command(args)
+        return
+
+    if args.mode == 'aead':
+        _handle_aead_command(args)
+        return
+
+    # Оригинальный код для других режимов
     # Sprint 3: Определяем, нужно ли генерировать ключ
     auto_generate_key = args.encrypt and not args.key
 
@@ -73,6 +88,151 @@ def _handle_crypto_command(args):
                 print(f"  Использован IV из аргумента командной строки")
             else:
                 print(f"  IV прочитан из начала входного файла")
+
+
+def _handle_gcm_command(args):
+    """Обработка команды GCM шифрования/дешифрования"""
+    # Читаем входной файл
+    with open(args.input, 'rb') as f:
+        data = f.read()
+
+    # Получаем ключ
+    if args.encrypt and not args.key:
+        # Генерируем ключ автоматически
+        from src.csprng import generate_random_bytes
+        key = generate_random_bytes(16)
+        key_hex = key.hex()
+        print(f"[+] Сгенерирован случайный ключ GCM: {key_hex}")
+        print(f"    Сохраните этот ключ для дешифрования!")
+    else:
+        if not args.key:
+            raise ValueError("Для GCM режима требуется ключ (--key)")
+        key = bytes.fromhex(args.key)
+
+    # Получаем AAD (если есть)
+    aad = b""
+    if hasattr(args, 'aad') and args.aad:
+        aad = bytes.fromhex(args.aad)
+
+    # Выполняем операцию
+    if args.encrypt:
+        # Шифрование GCM
+        gcm = GCM(key)
+        ciphertext = gcm.encrypt(data, aad)
+
+        with open(args.output, 'wb') as f:
+            f.write(ciphertext)
+
+        print(f"[+] GCM шифрование успешно завершено")
+        print(f"  Вход:     {args.input}")
+        print(f"  Выход:    {args.output}")
+        print(f"  Nonce:    {gcm.nonce.hex()}")
+        print(f"  Ключ:     {key.hex()}")
+        if aad:
+            print(f"  AAD:      {aad.hex()}")
+        print(f"  Размер:   {len(data)} байт -> {len(ciphertext)} байт")
+
+    else:
+        # Дешифрование GCM
+        # Для GCM nonce читается из файла, но может быть передан через --iv
+        if args.iv:
+            nonce = bytes.fromhex(args.iv)
+            gcm = GCM(key, nonce)
+        else:
+            # Nonce будет прочитан из файла автоматически
+            gcm = GCM(key)
+
+        try:
+            plaintext = gcm.decrypt(data, aad)
+
+            with open(args.output, 'wb') as f:
+                f.write(plaintext)
+
+            print(f"[+] GCM дешифрование успешно завершено")
+            print(f"  Вход:     {args.input}")
+            print(f"  Выход:    {args.output}")
+            print(f"  Nonce:    {gcm.nonce.hex()}")
+            print(f"  Ключ:     {key.hex()}")
+            if aad:
+                print(f"  AAD:      {aad.hex()}")
+            print(f"  Размер:   {len(data)} байт -> {len(plaintext)} байт")
+            print(f"  Аутентификация: УСПЕШНО")
+
+        except AuthenticationError:
+            # Удаляем частично созданный файл если есть
+            if os.path.exists(args.output):
+                os.remove(args.output)
+            raise AuthenticationError(
+                "Аутентификация GCM не удалась. Файл может быть поврежден или использован неверный ключ/AAD.")
+
+
+def _handle_aead_command(args):
+    """Обработка команды Encrypt-then-MAC"""
+    # Читаем входной файл
+    with open(args.input, 'rb') as f:
+        data = f.read()
+
+    # Получаем ключ
+    if args.encrypt and not args.key:
+        # Генерируем ключ автоматически
+        from src.csprng import generate_random_bytes
+        master_key = generate_random_bytes(32)  # Больший ключ для деривации
+        key_hex = master_key.hex()
+        print(f"[+] Сгенерирован мастер-ключ AEAD: {key_hex}")
+        print(f"    Сохраните этот ключ для дешифрования!")
+    else:
+        if not args.key:
+            raise ValueError("Для AEAD режима требуется ключ (--key)")
+        master_key = bytes.fromhex(args.key)
+
+    # Получаем AAD (если есть)
+    aad = b""
+    if hasattr(args, 'aad') and args.aad:
+        aad = bytes.fromhex(args.aad)
+
+    # Создаем AEAD объект
+    aead = EncryptThenMAC.from_master_key(master_key)
+
+    # Выполняем операцию
+    if args.encrypt:
+        # Шифрование Encrypt-then-MAC
+        ciphertext = aead.encrypt(data, aad)
+
+        with open(args.output, 'wb') as f:
+            f.write(ciphertext)
+
+        print(f"[+] Encrypt-then-MAC шифрование успешно завершено")
+        print(f"  Вход:     {args.input}")
+        print(f"  Выход:    {args.output}")
+        print(f"  Мастер-ключ: {master_key.hex()}")
+        if aad:
+            print(f"  AAD:      {aad.hex()}")
+        print(f"  Размер:   {len(data)} байт -> {len(ciphertext)} байт")
+        print(f"  Формат:   IV(16) || ciphertext || tag(16)")
+
+    else:
+        # Дешифрование Encrypt-then-MAC
+        try:
+            plaintext = aead.decrypt(data, aad)
+
+            with open(args.output, 'wb') as f:
+                f.write(plaintext)
+
+            print(f"[+] Encrypt-then-MAC дешифрование успешно завершено")
+            print(f"  Вход:     {args.input}")
+            print(f"  Выход:    {args.output}")
+            print(f"  Мастер-ключ: {master_key.hex()}")
+            if aad:
+                print(f"  AAD:      {aad.hex()}")
+            print(f"  Размер:   {len(data)} байт -> {len(plaintext)} байт")
+            print(f"  Аутентификация: УСПЕШНО")
+
+        except AuthenticationError:
+            # Удаляем частично созданный файл если есть
+            if os.path.exists(args.output):
+                os.remove(args.output)
+            raise AuthenticationError(
+                "Аутентификация Encrypt-then-MAC не удалась. Файл может быть поврежден или использован неверный ключ/AAD.")
 
 
 def _handle_dgst_command(args):
@@ -171,6 +331,7 @@ def _handle_mac_command(args):
     print(f"  Файл: {args.input}", file=sys.stderr)
     print(f"  Ключ: {args.key}", file=sys.stderr)
     print(f"  {mac_type}: {mac_hex}", file=sys.stderr)
+
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,2 @@
-"""
-CryptoCore - инструмент для шифрования файлов
-Пакет src содержит основную логику приложения
-"""
+﻿# src/__init__.py
+# CryptoCore main package - Sprint 6
