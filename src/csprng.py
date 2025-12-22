@@ -1,130 +1,130 @@
-﻿"""
-РњРѕРґСѓР»СЊ РґР»СЏ РєСЂРёРїС‚РѕРіСЂР°С„РёС‡РµСЃРєРё СЃС‚РѕР№РєРѕР№ РіРµРЅРµСЂР°С†РёРё СЃР»СѓС‡Р°Р№РЅС‹С… С‡РёСЃРµР»
-Sprint 3: Р РµР°Р»РёР·Р°С†РёСЏ CSPRNG РґР»СЏ РєР»СЋС‡РµР№ Рё IV
-"""
-
-import os
-
-
-def generate_random_bytes(num_bytes: int) -> bytes:
-    """
-    Р“РµРЅРµСЂР°С†РёСЏ РєСЂРёРїС‚РѕРіСЂР°С„РёС‡РµСЃРєРё СЃС‚РѕР№РєРёС… СЃР»СѓС‡Р°Р№РЅС‹С… Р±Р°Р№С‚РѕРІ
-
-    Args:
-        num_bytes: РєРѕР»РёС‡РµСЃС‚РІРѕ Р±Р°Р№С‚РѕРІ РґР»СЏ РіРµРЅРµСЂР°С†РёРё
-
-    Returns:
-        bytes: СЃР»СѓС‡Р°Р№РЅС‹Рµ Р±Р°Р№С‚С‹
-
-    Raises:
-        ValueError: РµСЃР»Рё num_bytes <= 0
-        RuntimeError: РµСЃР»Рё РЅРµ СѓРґР°Р»РѕСЃСЊ СЃРіРµРЅРµСЂРёСЂРѕРІР°С‚СЊ СЃР»СѓС‡Р°Р№РЅС‹Рµ Р±Р°Р№С‚С‹
-    """
-    if num_bytes <= 0:
-        raise ValueError(f"num_bytes РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РїРѕР»РѕР¶РёС‚РµР»СЊРЅС‹Рј С‡РёСЃР»РѕРј. РџРѕР»СѓС‡РµРЅРѕ: {num_bytes}")
-
-    try:
-        # РСЃРїРѕР»СЊР·СѓРµРј os.urandom() РєР°Рє РєСЂРёРїС‚РѕРіСЂР°С„РёС‡РµСЃРєРё СЃС‚РѕР№РєРёР№ РёСЃС‚РѕС‡РЅРёРє
-        # Р­С‚Рѕ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓРµС‚ С‚СЂРµР±РѕРІР°РЅРёСЋ RNG-3 РґР»СЏ Python
-        random_bytes = os.urandom(num_bytes)
-
-        # РџСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РїРѕР»СѓС‡РёР»Рё РїСЂР°РІРёР»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ Р±Р°Р№С‚РѕРІ
-        if len(random_bytes) != num_bytes:
-            raise RuntimeError(f"РќРµ СѓРґР°Р»РѕСЃСЊ СЃРіРµРЅРµСЂРёСЂРѕРІР°С‚СЊ {num_bytes} Р±Р°Р№С‚РѕРІ. РџРѕР»СѓС‡РµРЅРѕ: {len(random_bytes)} Р±Р°Р№С‚РѕРІ")
-
-        return random_bytes
-
-    except Exception as e:
-        raise RuntimeError(f"РћС€РёР±РєР° РїСЂРё РіРµРЅРµСЂР°С†РёРё СЃР»СѓС‡Р°Р№РЅС‹С… Р±Р°Р№С‚РѕРІ: {e}")
-
-
-def generate_random_hex(num_bytes: int) -> str:
-    """
-    Р“РµРЅРµСЂР°С†РёСЏ СЃР»СѓС‡Р°Р№РЅС‹С… Р±Р°Р№С‚РѕРІ РІ hex С„РѕСЂРјР°С‚Рµ
-
-    Args:
-        num_bytes: РєРѕР»РёС‡РµСЃС‚РІРѕ Р±Р°Р№С‚РѕРІ РґР»СЏ РіРµРЅРµСЂР°С†РёРё
-
-    Returns:
-        str: hex СЃС‚СЂРѕРєР°
-    """
-    random_bytes = generate_random_bytes(num_bytes)
-    return random_bytes.hex()
-
-
-def generate_aes_key() -> bytes:
-    """
-    Р“РµРЅРµСЂР°С†РёСЏ 16-Р±Р°Р№С‚РЅРѕРіРѕ РєР»СЋС‡Р° РґР»СЏ AES-128
-
-    Returns:
-        bytes: 16-Р±Р°Р№С‚РЅС‹Р№ РєР»СЋС‡
-    """
-    return generate_random_bytes(16)
-
-
-def generate_aes_key_hex() -> str:
-    """
-    Р“РµРЅРµСЂР°С†РёСЏ 16-Р±Р°Р№С‚РЅРѕРіРѕ РєР»СЋС‡Р° РґР»СЏ AES-128 РІ hex С„РѕСЂРјР°С‚Рµ
-
-    Returns:
-        str: hex СЃС‚СЂРѕРєР° РєР»СЋС‡Р° (32 СЃРёРјРІРѕР»Р°)
-    """
-    return generate_aes_key().hex()
-
-
-def generate_iv() -> bytes:
-    """
-    Р“РµРЅРµСЂР°С†РёСЏ 16-Р±Р°Р№С‚РЅРѕРіРѕ РІРµРєС‚РѕСЂР° РёРЅРёС†РёР°Р»РёР·Р°С†РёРё
-
-    Returns:
-        bytes: 16-Р±Р°Р№С‚РЅС‹Р№ IV
-    """
-    return generate_random_bytes(16)
-
-
-def generate_iv_hex() -> str:
-    """
-    Р“РµРЅРµСЂР°С†РёСЏ 16-Р±Р°Р№С‚РЅРѕРіРѕ РІРµРєС‚РѕСЂР° РёРЅРёС†РёР°Р»РёР·Р°С†РёРё РІ hex С„РѕСЂРјР°С‚Рµ
-
-    Returns:
-        str: hex СЃС‚СЂРѕРєР° IV (32 СЃРёРјРІРѕР»Р°)
-    """
-    return generate_iv().hex()
-
-
-def test_csprng():
-    """РўРµСЃС‚РѕРІР°СЏ С„СѓРЅРєС†РёСЏ РґР»СЏ РїСЂРѕРІРµСЂРєРё СЂР°Р±РѕС‚С‹ CSPRNG"""
-    print("РўРµСЃС‚РёСЂРѕРІР°РЅРёРµ CSPRNG...")
-
-    # РўРµСЃС‚ 1: Р“РµРЅРµСЂР°С†РёСЏ РєР»СЋС‡Р°
-    key = generate_aes_key()
-    print(f"1. РЎРіРµРЅРµСЂРёСЂРѕРІР°РЅ РєР»СЋС‡: {key.hex()}")
-    print(f"   Р”Р»РёРЅР°: {len(key)} Р±Р°Р№С‚ ({len(key)*8} Р±РёС‚)")
-
-    # РўРµСЃС‚ 2: Р“РµРЅРµСЂР°С†РёСЏ IV
-    iv = generate_iv()
-    print(f"2. РЎРіРµРЅРµСЂРёСЂРѕРІР°РЅ IV: {iv.hex()}")
-    print(f"   Р”Р»РёРЅР°: {len(iv)} Р±Р°Р№С‚")
-
-    # РўРµСЃС‚ 3: Р“РµРЅРµСЂР°С†РёСЏ РїСЂРѕРёР·РІРѕР»СЊРЅРѕРіРѕ РєРѕР»РёС‡РµСЃС‚РІР° Р±Р°Р№С‚РѕРІ
-    random_bytes = generate_random_bytes(32)
-    print(f"3. РЎРіРµРЅРµСЂРёСЂРѕРІР°РЅРѕ 32 СЃР»СѓС‡Р°Р№РЅС‹С… Р±Р°Р№С‚Р°: {random_bytes.hex()[:64]}...")
-
-    # РўРµСЃС‚ 4: РџСЂРѕРІРµСЂРєР° РѕС€РёР±РѕРє
-    try:
-        generate_random_bytes(0)
-    except ValueError as e:
-        print(f"4. РљРѕСЂСЂРµРєС‚РЅРѕ РѕР±СЂР°Р±РѕС‚Р°РЅР° РѕС€РёР±РєР°: {e}")
-
-    try:
-        generate_random_bytes(-1)
-    except ValueError as e:
-        print(f"5. РљРѕСЂСЂРµРєС‚РЅРѕ РѕР±СЂР°Р±РѕС‚Р°РЅР° РѕС€РёР±РєР°: {e}")
-
-    print("\n[+] Р’СЃРµ С‚РµСЃС‚С‹ CSPRNG РїСЂРѕР№РґРµРЅС‹ СѓСЃРїРµС€РЅРѕ!")
-    return True
-
-
-if __name__ == "__main__":
-    test_csprng()
-
+"""
+Модуль для криптографически стойкой генерации случайных чисел
+Sprint 3: Реализация CSPRNG для ключей и IV
+"""
+
+import os
+
+
+def generate_random_bytes(num_bytes: int) -> bytes:
+    """
+    Генерация криптографически стойких случайных байтов
+
+    Args:
+        num_bytes: количество байтов для генерации
+
+    Returns:
+        bytes: случайные байты
+
+    Raises:
+        ValueError: если num_bytes <= 0
+        RuntimeError: если не удалось сгенерировать случайные байты
+    """
+    if num_bytes <= 0:
+        raise ValueError(f"num_bytes должен быть положительным числом. Получено: {num_bytes}")
+
+    try:
+        # спользуем os.urandom() как криптографически стойкий источник
+        # Это соответствует требованию RNG-3 для Python
+        random_bytes = os.urandom(num_bytes)
+
+        # Проверка, что получили правильное количество байтов
+        if len(random_bytes) != num_bytes:
+            raise RuntimeError(f"Не удалось сгенерировать {num_bytes} байтов. Получено: {len(random_bytes)} байтов")
+
+        return random_bytes
+
+    except Exception as e:
+        raise RuntimeError(f"Ошибка при генерации случайных байтов: {e}")
+
+
+def generate_random_hex(num_bytes: int) -> str:
+    """
+    Генерация случайных байтов в hex формате
+
+    Args:
+        num_bytes: количество байтов для генерации
+
+    Returns:
+        str: hex строка
+    """
+    random_bytes = generate_random_bytes(num_bytes)
+    return random_bytes.hex()
+
+
+def generate_aes_key() -> bytes:
+    """
+    Генерация 16-байтного ключа для AES-128
+
+    Returns:
+        bytes: 16-байтный ключ
+    """
+    return generate_random_bytes(16)
+
+
+def generate_aes_key_hex() -> str:
+    """
+    Генерация 16-байтного ключа для AES-128 в hex формате
+
+    Returns:
+        str: hex строка ключа (32 символа)
+    """
+    return generate_aes_key().hex()
+
+
+def generate_iv() -> bytes:
+    """
+    Генерация 16-байтного вектора инициализации
+
+    Returns:
+        bytes: 16-байтный IV
+    """
+    return generate_random_bytes(16)
+
+
+def generate_iv_hex() -> str:
+    """
+    Генерация 16-байтного вектора инициализации в hex формате
+
+    Returns:
+        str: hex строка IV (32 символа)
+    """
+    return generate_iv().hex()
+
+
+def test_csprng():
+    """Тестовая функция для проверки работы CSPRNG"""
+    print("Тестирование CSPRNG...")
+
+    # Тест 1: Генерация ключа
+    key = generate_aes_key()
+    print(f"1. Сгенерирован ключ: {key.hex()}")
+    print(f"   Длина: {len(key)} байт ({len(key)*8} бит)")
+
+    # Тест 2: Генерация IV
+    iv = generate_iv()
+    print(f"2. Сгенерирован IV: {iv.hex()}")
+    print(f"   Длина: {len(iv)} байт")
+
+    # Тест 3: Генерация произвольного количества байтов
+    random_bytes = generate_random_bytes(32)
+    print(f"3. Сгенерировано 32 случайных байта: {random_bytes.hex()[:64]}...")
+
+    # Тест 4: Проверка ошибок
+    try:
+        generate_random_bytes(0)
+    except ValueError as e:
+        print(f"4. Корректно обработана ошибка: {e}")
+
+    try:
+        generate_random_bytes(-1)
+    except ValueError as e:
+        print(f"5. Корректно обработана ошибка: {e}")
+
+    print("\n[+] Все тесты CSPRNG пройдены успешно!")
+    return True
+
+
+if __name__ == "__main__":
+    test_csprng()
+
