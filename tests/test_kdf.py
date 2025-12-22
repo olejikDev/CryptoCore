@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Test script for Sprint 7 - Key Derivation Functions
 """
@@ -10,9 +10,9 @@ import hashlib
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from cryptocore.kdf.pbkdf2 import pbkdf2_hmac_sha256, verify_implementation
-from cryptocore.kdf.hkdf import derive_key, test_key_uniqueness, test_deterministic_output
-from cryptocore.csprng import generate_random_bytes
+from src.kdf.pbkdf2 import pbkdf2_hmac_sha256, verify_implementation
+from src.kdf.hkdf import derive_key, test_key_uniqueness, test_deterministic_output
+from src.csprng import generate_random_bytes
 
 
 def test_pbkdf2_rfc6070():
@@ -64,21 +64,21 @@ def test_pbkdf2_rfc6070():
             expected = bytes.fromhex(test['expected'])
 
             if result == expected:
-                print(f"  Test {i}: ✓ PASSED")
+                print(f"  Test {i}: вњ“ PASSED")
             else:
-                print(f"  Test {i}: ✗ FAILED")
+                print(f"  Test {i}: вњ— FAILED")
                 print(f"    Expected: {expected.hex()}")
                 print(f"    Got:      {result.hex()}")
                 all_passed = False
 
         except Exception as e:
-            print(f"  Test {i}: ✗ ERROR - {e}")
+            print(f"  Test {i}: вњ— ERROR - {e}")
             all_passed = False
 
     if all_passed:
-        print("✓ All RFC 6070 test vectors passed")
+        print("вњ“ All RFC 6070 test vectors passed")
     else:
-        print("✗ Some RFC 6070 tests failed")
+        print("вњ— Some RFC 6070 tests failed")
 
     return all_passed
 
@@ -100,19 +100,19 @@ def test_pbkdf2_lengths():
             key = pbkdf2_hmac_sha256(password, salt, iterations, length)
 
             if len(key) == length:
-                print(f"  Length {length:3d} bytes: ✓ PASSED")
+                print(f"  Length {length:3d} bytes: вњ“ PASSED")
             else:
-                print(f"  Length {length:3d} bytes: ✗ FAILED (got {len(key)} bytes)")
+                print(f"  Length {length:3d} bytes: вњ— FAILED (got {len(key)} bytes)")
                 all_passed = False
 
         except Exception as e:
-            print(f"  Length {length:3d} bytes: ✗ ERROR - {e}")
+            print(f"  Length {length:3d} bytes: вњ— ERROR - {e}")
             all_passed = False
 
     if all_passed:
-        print("✓ All length tests passed")
+        print("вњ“ All length tests passed")
     else:
-        print("✗ Some length tests failed")
+        print("вњ— Some length tests failed")
 
     return all_passed
 
@@ -136,10 +136,10 @@ def test_pbkdf2_deterministic():
     all_equal = all(r == results[0] for r in results)
 
     if all_equal:
-        print(f"✓ PBKDF2 is deterministic (5 runs produced identical output)")
+        print(f"вњ“ PBKDF2 is deterministic (5 runs produced identical output)")
         print(f"  Key: {results[0].hex()[:32]}...")
     else:
-        print("✗ PBKDF2 is not deterministic")
+        print("вњ— PBKDF2 is not deterministic")
 
     return all_equal
 
@@ -182,20 +182,20 @@ def test_pbkdf2_openssl_interop():
             )
 
             if openssl_bytes == our_output:
-                print("✓ PBKDF2 matches OpenSSL output")
+                print("вњ“ PBKDF2 matches OpenSSL output")
                 print(f"  OpenSSL: {openssl_output[:32]}...")
                 print(f"  Our:     {our_output.hex()[:32]}...")
                 return True
             else:
-                print("✗ PBKDF2 does not match OpenSSL")
+                print("вњ— PBKDF2 does not match OpenSSL")
                 return False
         else:
-            print("⚠ Could not run OpenSSL for comparison")
+            print("вљ  Could not run OpenSSL for comparison")
             print(f"  Error: {result.stderr}")
             return True  # Not a failure, just skip
 
     except Exception as e:
-        print(f"⚠ OpenSSL test skipped: {e}")
+        print(f"вљ  OpenSSL test skipped: {e}")
         return True  # Not a failure if OpenSSL not available
 
 
@@ -210,12 +210,12 @@ def test_salt_randomness():
         salt_hex = salt.hex()
 
         if salt_hex in salts:
-            print(f"✗ Duplicate salt found at iteration {i}")
+            print(f"вњ— Duplicate salt found at iteration {i}")
             return False
 
         salts.add(salt_hex)
 
-    print(f"✓ Generated {len(salts)} unique salts")
+    print(f"вњ“ Generated {len(salts)} unique salts")
     return True
 
 
@@ -246,19 +246,20 @@ def run_all_tests():
     total = len(test_results)
 
     for test_name, result in test_results:
-        status = "✓ PASS" if result else "✗ FAIL"
+        status = "вњ“ PASS" if result else "вњ— FAIL"
         print(f"{status} {test_name}")
 
     print("-" * 60)
     print(f"Total: {passed}/{total} tests passed")
 
     if passed == total:
-        print("✓ All tests passed successfully!")
+        print("вњ“ All tests passed successfully!")
         return 0
     else:
-        print(f"✗ {total - passed} tests failed")
+        print(f"вњ— {total - passed} tests failed")
         return 1
 
 
 if __name__ == "__main__":
     sys.exit(run_all_tests())
+

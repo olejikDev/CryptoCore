@@ -1,4 +1,4 @@
-"""Modes of operation package."""
+﻿"""Modes of operation package."""
 from .ecb import ECBMode
 from .cbc import CBCMode
 from .cfb import CFBMode
@@ -17,3 +17,4 @@ MODES = {
     'ctr': CTRMode,
     'gcm': GCM
 }
+

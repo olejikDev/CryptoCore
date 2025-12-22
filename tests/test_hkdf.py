@@ -1,4 +1,4 @@
-import unittest
+﻿import unittest
 import sys
 import os
 
@@ -54,3 +54,4 @@ class TestHKDF(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

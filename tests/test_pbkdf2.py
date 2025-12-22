@@ -1,4 +1,4 @@
-import unittest
+﻿import unittest
 import sys
 import os
 
@@ -77,3 +77,4 @@ class TestPBKDF2(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

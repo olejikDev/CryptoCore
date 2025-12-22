@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-Скрипт для подготовки и запуска NIST тестов
-Требование TEST-3: запуск NIST Statistical Test Suite
+РЎРєСЂРёРїС‚ РґР»СЏ РїРѕРґРіРѕС‚РѕРІРєРё Рё Р·Р°РїСѓСЃРєР° NIST С‚РµСЃС‚РѕРІ
+РўСЂРµР±РѕРІР°РЅРёРµ TEST-3: Р·Р°РїСѓСЃРє NIST Statistical Test Suite
 """
 
 import os
@@ -9,26 +9,26 @@ import sys
 import subprocess
 import argparse
 
-# Добавляем путь к src для импорта модулей
+# Р”РѕР±Р°РІР»СЏРµРј РїСѓС‚СЊ Рє src РґР»СЏ РёРјРїРѕСЂС‚Р° РјРѕРґСѓР»РµР№
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 try:
     from src.csprng import generate_random_bytes
 except ImportError:
-    print("Ошибка: Не удалось импортировать модуль csprng")
-    print("Убедитесь, что вы запускаете скрипт из корневой директории проекта")
+    print("РћС€РёР±РєР°: РќРµ СѓРґР°Р»РѕСЃСЊ РёРјРїРѕСЂС‚РёСЂРѕРІР°С‚СЊ РјРѕРґСѓР»СЊ csprng")
+    print("РЈР±РµРґРёС‚РµСЃСЊ, С‡С‚Рѕ РІС‹ Р·Р°РїСѓСЃРєР°РµС‚Рµ СЃРєСЂРёРїС‚ РёР· РєРѕСЂРЅРµРІРѕР№ РґРёСЂРµРєС‚РѕСЂРёРё РїСЂРѕРµРєС‚Р°")
     sys.exit(1)
 
 
 def generate_nist_test_file(size_mb, output_file):
     """
-    Генерация файла для NIST тестов
+    Р“РµРЅРµСЂР°С†РёСЏ С„Р°Р№Р»Р° РґР»СЏ NIST С‚РµСЃС‚РѕРІ
 
     Args:
-        size_mb: размер файла в мегабайтах
-        output_file: путь к выходному файлу
+        size_mb: СЂР°Р·РјРµСЂ С„Р°Р№Р»Р° РІ РјРµРіР°Р±Р°Р№С‚Р°С…
+        output_file: РїСѓС‚СЊ Рє РІС‹С…РѕРґРЅРѕРјСѓ С„Р°Р№Р»Сѓ
     """
-    print(f"Генерация файла размером {size_mb} MB для NIST тестов...")
+    print(f"Р“РµРЅРµСЂР°С†РёСЏ С„Р°Р№Р»Р° СЂР°Р·РјРµСЂРѕРј {size_mb} MB РґР»СЏ NIST С‚РµСЃС‚РѕРІ...")
 
     total_size = size_mb * 1024 * 1024
 
@@ -38,26 +38,26 @@ def generate_nist_test_file(size_mb, output_file):
             chunk_size = 4096
 
             while bytes_written < total_size:
-                # Отображение прогресса
+                # РћС‚РѕР±СЂР°Р¶РµРЅРёРµ РїСЂРѕРіСЂРµСЃСЃР°
                 if bytes_written % (5 * 1024 * 1024) == 0 and bytes_written > 0:
                     progress = (bytes_written / total_size) * 100
-                    print(f"  Прогресс: {progress:.1f}% ({bytes_written / 1024 / 1024:.1f} MB / {size_mb} MB)")
+                    print(f"  РџСЂРѕРіСЂРµСЃСЃ: {progress:.1f}% ({bytes_written / 1024 / 1024:.1f} MB / {size_mb} MB)")
 
-                # Вычисляем размер текущего чанка
+                # Р’С‹С‡РёСЃР»СЏРµРј СЂР°Р·РјРµСЂ С‚РµРєСѓС‰РµРіРѕ С‡Р°РЅРєР°
                 current_chunk_size = min(chunk_size, total_size - bytes_written)
 
-                # Генерируем случайные данные
+                # Р“РµРЅРµСЂРёСЂСѓРµРј СЃР»СѓС‡Р°Р№РЅС‹Рµ РґР°РЅРЅС‹Рµ
                 random_chunk = generate_random_bytes(current_chunk_size)
 
-                # Записываем в файл
+                # Р—Р°РїРёСЃС‹РІР°РµРј РІ С„Р°Р№Р»
                 f.write(random_chunk)
                 bytes_written += current_chunk_size
 
-        print(f"[+] Файл создан: {output_file}")
-        print(f"    Размер: {bytes_written:,} байтов ({bytes_written / 1024 / 1024:.2f} MB)")
+        print(f"[+] Р¤Р°Р№Р» СЃРѕР·РґР°РЅ: {output_file}")
+        print(f"    Р Р°Р·РјРµСЂ: {bytes_written:,} Р±Р°Р№С‚РѕРІ ({bytes_written / 1024 / 1024:.2f} MB)")
         print(f"    SHA-256: ", end="")
 
-        # Вычисляем хэш для проверки
+        # Р’С‹С‡РёСЃР»СЏРµРј С…СЌС€ РґР»СЏ РїСЂРѕРІРµСЂРєРё
         import hashlib
         with open(output_file, 'rb') as f:
             file_hash = hashlib.sha256()
@@ -68,12 +68,12 @@ def generate_nist_test_file(size_mb, output_file):
         return True
 
     except Exception as e:
-        print(f"[-] Ошибка при создании файла: {e}")
+        print(f"[-] РћС€РёР±РєР° РїСЂРё СЃРѕР·РґР°РЅРёРё С„Р°Р№Р»Р°: {e}")
         return False
 
 
 def check_nist_installed():
-    """Проверка, установлен ли NIST STS"""
+    """РџСЂРѕРІРµСЂРєР°, СѓСЃС‚Р°РЅРѕРІР»РµРЅ Р»Рё NIST STS"""
     nist_paths = [
         "sts-2.1.2/assess",
         "STS/assess",
@@ -82,125 +82,125 @@ def check_nist_installed():
 
     for path in nist_paths:
         if os.path.exists(path):
-            print(f"[+] Найден NIST STS: {path}")
+            print(f"[+] РќР°Р№РґРµРЅ NIST STS: {path}")
             return path
 
-    print("[!] NIST STS не найден в стандартных путях")
+    print("[!] NIST STS РЅРµ РЅР°Р№РґРµРЅ РІ СЃС‚Р°РЅРґР°СЂС‚РЅС‹С… РїСѓС‚СЏС…")
     return None
 
 
 def run_nist_tests(data_file, nist_path):
     """
-    Запуск NIST тестов
+    Р—Р°РїСѓСЃРє NIST С‚РµСЃС‚РѕРІ
 
     Args:
-        data_file: путь к тестовому файлу
-        nist_path: путь к исполняемому файлу NIST STS
+        data_file: РїСѓС‚СЊ Рє С‚РµСЃС‚РѕРІРѕРјСѓ С„Р°Р№Р»Сѓ
+        nist_path: РїСѓС‚СЊ Рє РёСЃРїРѕР»РЅСЏРµРјРѕРјСѓ С„Р°Р№Р»Сѓ NIST STS
     """
-    print(f"\nЗапуск NIST тестов для файла: {data_file}")
+    print(f"\nР—Р°РїСѓСЃРє NIST С‚РµСЃС‚РѕРІ РґР»СЏ С„Р°Р№Р»Р°: {data_file}")
 
-    # Получаем размер файла в битах
+    # РџРѕР»СѓС‡Р°РµРј СЂР°Р·РјРµСЂ С„Р°Р№Р»Р° РІ Р±РёС‚Р°С…
     file_size = os.path.getsize(data_file)
     bit_length = file_size * 8
 
-    print(f"Размер файла: {file_size:,} байтов ({bit_length:,} бит)")
+    print(f"Р Р°Р·РјРµСЂ С„Р°Р№Р»Р°: {file_size:,} Р±Р°Р№С‚РѕРІ ({bit_length:,} Р±РёС‚)")
 
-    # Команда для запуска NIST STS
+    # РљРѕРјР°РЅРґР° РґР»СЏ Р·Р°РїСѓСЃРєР° NIST STS
     cmd = [nist_path, str(bit_length)]
 
-    print(f"\nКоманда для запуска: {' '.join(cmd)}")
-    print("\nПосле запуска NIST STS:")
-    print("1. Введите путь к тестовому файлу")
-    print("2. Выберите '0' для всех тестов")
-    print("3. Настройте параметры по умолчанию")
-    print("4. Дождитесь завершения тестов")
-    print("5. Результаты будут в папке 'experiments/'")
+    print(f"\nРљРѕРјР°РЅРґР° РґР»СЏ Р·Р°РїСѓСЃРєР°: {' '.join(cmd)}")
+    print("\nРџРѕСЃР»Рµ Р·Р°РїСѓСЃРєР° NIST STS:")
+    print("1. Р’РІРµРґРёС‚Рµ РїСѓС‚СЊ Рє С‚РµСЃС‚РѕРІРѕРјСѓ С„Р°Р№Р»Сѓ")
+    print("2. Р’С‹Р±РµСЂРёС‚Рµ '0' РґР»СЏ РІСЃРµС… С‚РµСЃС‚РѕРІ")
+    print("3. РќР°СЃС‚СЂРѕР№С‚Рµ РїР°СЂР°РјРµС‚СЂС‹ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ")
+    print("4. Р”РѕР¶РґРёС‚РµСЃСЊ Р·Р°РІРµСЂС€РµРЅРёСЏ С‚РµСЃС‚РѕРІ")
+    print("5. Р РµР·СѓР»СЊС‚Р°С‚С‹ Р±СѓРґСѓС‚ РІ РїР°РїРєРµ 'experiments/'")
 
-    # Запрос на запуск
-    response = input("\nЗапустить NIST STS сейчас? (y/n): ")
+    # Р—Р°РїСЂРѕСЃ РЅР° Р·Р°РїСѓСЃРє
+    response = input("\nР—Р°РїСѓСЃС‚РёС‚СЊ NIST STS СЃРµР№С‡Р°СЃ? (y/n): ")
     if response.lower() == 'y':
         try:
             subprocess.run(cmd, cwd=os.path.dirname(nist_path) or '.')
         except Exception as e:
-            print(f"Ошибка при запуске NIST STS: {e}")
+            print(f"РћС€РёР±РєР° РїСЂРё Р·Р°РїСѓСЃРєРµ NIST STS: {e}")
     else:
-        print("\nВы можете запустить NIST STS вручную:")
+        print("\nР’С‹ РјРѕР¶РµС‚Рµ Р·Р°РїСѓСЃС‚РёС‚СЊ NIST STS РІСЂСѓС‡РЅСѓСЋ:")
         print(f"cd {os.path.dirname(nist_path) or '.'}")
         print(f"./assess {bit_length}")
 
 
 def main():
-    """Основная функция"""
+    """РћСЃРЅРѕРІРЅР°СЏ С„СѓРЅРєС†РёСЏ"""
     parser = argparse.ArgumentParser(
-        description="Подготовка данных и запуск NIST Statistical Test Suite"
+        description="РџРѕРґРіРѕС‚РѕРІРєР° РґР°РЅРЅС‹С… Рё Р·Р°РїСѓСЃРє NIST Statistical Test Suite"
     )
 
     parser.add_argument(
         "--size",
         type=int,
         default=10,
-        help="Размер тестового файла в мегабайтах (по умолчанию: 10)"
+        help="Р Р°Р·РјРµСЂ С‚РµСЃС‚РѕРІРѕРіРѕ С„Р°Р№Р»Р° РІ РјРµРіР°Р±Р°Р№С‚Р°С… (РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ: 10)"
     )
 
     parser.add_argument(
         "--output",
         type=str,
         default="nist_test_data.bin",
-        help="Имя выходного файла (по умолчанию: nist_test_data.bin)"
+        help="РРјСЏ РІС‹С…РѕРґРЅРѕРіРѕ С„Р°Р№Р»Р° (РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ: nist_test_data.bin)"
     )
 
     parser.add_argument(
         "--generate-only",
         action="store_true",
-        help="Только сгенерировать файл, не запускать NIST STS"
+        help="РўРѕР»СЊРєРѕ СЃРіРµРЅРµСЂРёСЂРѕРІР°С‚СЊ С„Р°Р№Р», РЅРµ Р·Р°РїСѓСЃРєР°С‚СЊ NIST STS"
     )
 
     args = parser.parse_args()
 
     print("=" * 70)
-    print("ПОДГОТОВКА К NIST STATISTICAL TEST SUITE")
-    print("Требование TEST-3: Проверка CSPRNG с помощью NIST STS")
+    print("РџРћР”Р“РћРўРћР’РљРђ Рљ NIST STATISTICAL TEST SUITE")
+    print("РўСЂРµР±РѕРІР°РЅРёРµ TEST-3: РџСЂРѕРІРµСЂРєР° CSPRNG СЃ РїРѕРјРѕС‰СЊСЋ NIST STS")
     print("=" * 70)
 
-    # 1. Генерация тестового файла
-    print("\n[1/3] Генерация тестового файла...")
+    # 1. Р“РµРЅРµСЂР°С†РёСЏ С‚РµСЃС‚РѕРІРѕРіРѕ С„Р°Р№Р»Р°
+    print("\n[1/3] Р“РµРЅРµСЂР°С†РёСЏ С‚РµСЃС‚РѕРІРѕРіРѕ С„Р°Р№Р»Р°...")
     if not generate_nist_test_file(args.size, args.output):
         sys.exit(1)
 
-    # 2. Проверка наличия NIST STS
-    print("\n[2/3] Поиск NIST STS...")
+    # 2. РџСЂРѕРІРµСЂРєР° РЅР°Р»РёС‡РёСЏ NIST STS
+    print("\n[2/3] РџРѕРёСЃРє NIST STS...")
     nist_path = check_nist_installed()
 
     if not nist_path:
-        print("\n[!] NIST STS не установлен")
-        print("\nИнструкции по установке:")
-        print("1. Скачайте NIST Statistical Test Suite:")
+        print("\n[!] NIST STS РЅРµ СѓСЃС‚Р°РЅРѕРІР»РµРЅ")
+        print("\nРРЅСЃС‚СЂСѓРєС†РёРё РїРѕ СѓСЃС‚Р°РЅРѕРІРєРµ:")
+        print("1. РЎРєР°С‡Р°Р№С‚Рµ NIST Statistical Test Suite:")
         print("   https://csrc.nist.gov/projects/random-bit-generation/documentation-and-software")
-        print("2. Распакуйте архив:")
+        print("2. Р Р°СЃРїР°РєСѓР№С‚Рµ Р°СЂС…РёРІ:")
         print("   tar -xzf sts-2.1.2.tar.gz")
-        print("3. Перейдите в директорию и скомпилируйте:")
+        print("3. РџРµСЂРµР№РґРёС‚Рµ РІ РґРёСЂРµРєС‚РѕСЂРёСЋ Рё СЃРєРѕРјРїРёР»РёСЂСѓР№С‚Рµ:")
         print("   cd sts-2.1.2")
         print("   make")
-        print("4. Исполняемый файл будет в sts-2.1.2/assess")
+        print("4. РСЃРїРѕР»РЅСЏРµРјС‹Р№ С„Р°Р№Р» Р±СѓРґРµС‚ РІ sts-2.1.2/assess")
 
-    # 3. Запуск NIST STS (если не указан --generate-only)
+    # 3. Р—Р°РїСѓСЃРє NIST STS (РµСЃР»Рё РЅРµ СѓРєР°Р·Р°РЅ --generate-only)
     if not args.generate_only and nist_path:
-        print("\n[3/3] Запуск NIST STS...")
+        print("\n[3/3] Р—Р°РїСѓСЃРє NIST STS...")
         run_nist_tests(args.output, nist_path)
     elif args.generate_only:
-        print("\n[3/3] Генерация завершена. NIST STS не запущен (--generate-only)")
+        print("\n[3/3] Р“РµРЅРµСЂР°С†РёСЏ Р·Р°РІРµСЂС€РµРЅР°. NIST STS РЅРµ Р·Р°РїСѓС‰РµРЅ (--generate-only)")
     else:
-        print("\n[3/3] NIST STS не найден, запуск невозможен")
+        print("\n[3/3] NIST STS РЅРµ РЅР°Р№РґРµРЅ, Р·Р°РїСѓСЃРє РЅРµРІРѕР·РјРѕР¶РµРЅ")
 
-    # Информация об анализе результатов
+    # РРЅС„РѕСЂРјР°С†РёСЏ РѕР± Р°РЅР°Р»РёР·Рµ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
     print("\n" + "=" * 70)
-    print("АНАЛИЗ РЕЗУЛЬТАТОВ NIST STS")
+    print("РђРќРђР›РР— Р Р•Р—РЈР›Р¬РўРђРўРћР’ NIST STS")
     print("=" * 70)
-    print("\nКритерии успеха для CSPRNG:")
-    print("1. Большинство тестов должно иметь p-value ≥ 0.01")
-    print("2. Процент успешных тестов должен быть ≥ 95%")
-    print("3. Небольшое количество сбоев статистически ожидаемо")
-    print("\nТесты, которые выполняет NIST STS:")
+    print("\nРљСЂРёС‚РµСЂРёРё СѓСЃРїРµС…Р° РґР»СЏ CSPRNG:")
+    print("1. Р‘РѕР»СЊС€РёРЅСЃС‚РІРѕ С‚РµСЃС‚РѕРІ РґРѕР»Р¶РЅРѕ РёРјРµС‚СЊ p-value в‰Ґ 0.01")
+    print("2. РџСЂРѕС†РµРЅС‚ СѓСЃРїРµС€РЅС‹С… С‚РµСЃС‚РѕРІ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ в‰Ґ 95%")
+    print("3. РќРµР±РѕР»СЊС€РѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ СЃР±РѕРµРІ СЃС‚Р°С‚РёСЃС‚РёС‡РµСЃРєРё РѕР¶РёРґР°РµРјРѕ")
+    print("\nРўРµСЃС‚С‹, РєРѕС‚РѕСЂС‹Рµ РІС‹РїРѕР»РЅСЏРµС‚ NIST STS:")
     print("1. Frequency (Monobit) Test")
     print("2. Frequency Test within a Block")
     print("3. Runs Test")
@@ -216,8 +216,9 @@ def main():
     print("13. Cumulative Sums (Cusum) Test")
     print("14. Random Excursions Test")
     print("15. Random Excursions Variant Test")
-    print("\nРезультаты будут сохранены в experiments/AlgorithmTesting/finalAnalysisReport.txt")
+    print("\nР РµР·СѓР»СЊС‚Р°С‚С‹ Р±СѓРґСѓС‚ СЃРѕС…СЂР°РЅРµРЅС‹ РІ experiments/AlgorithmTesting/finalAnalysisReport.txt")
 
 
 if __name__ == "__main__":
     main()
+

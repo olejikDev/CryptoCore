@@ -1,4 +1,4 @@
-"""
+﻿"""
 PBKDF2-HMAC-SHA256 implementation following RFC 2898.
 Full implementation from scratch as required.
 """
@@ -8,9 +8,9 @@ import hmac as builtin_hmac
 import hashlib
 from typing import Union
 
-# Для совместимости с нашей HMAC реализацией из Sprint 5
+# Р”Р»СЏ СЃРѕРІРјРµСЃС‚РёРјРѕСЃС‚Рё СЃ РЅР°С€РµР№ HMAC СЂРµР°Р»РёР·Р°С†РёРµР№ РёР· Sprint 5
 try:
-    from cryptocore.mac.hmac import HMAC as CustomHMAC
+    from src.mac.hmac import HMAC as CustomHMAC
     HAS_CUSTOM_HMAC = True
 except ImportError:
     HAS_CUSTOM_HMAC = False
@@ -226,7 +226,7 @@ def verify_implementation() -> bool:
             all_pass = False
 
     if all_pass:
-        print("All PBKDF2 tests passed ✓")
+        print("All PBKDF2 tests passed вњ“")
 
     return all_pass
 
@@ -262,3 +262,4 @@ if __name__ == "__main__":
 
     # Run benchmark
     benchmark_iterations()
+

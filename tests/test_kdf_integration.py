@@ -1,4 +1,4 @@
-"""
+﻿"""
 Integration tests for KDF functionality with CLI.
 """
 import subprocess
@@ -28,7 +28,7 @@ def test_cli_derive_basic():
         )
 
         if result.returncode == 0:
-            print("✓ Basic CLI derive test passed")
+            print("вњ“ Basic CLI derive test passed")
 
             # Parse output: KEY_HEX SALT_HEX
             parts = result.stdout.strip().split()
@@ -41,7 +41,7 @@ def test_cli_derive_basic():
 
             return True
         else:
-            print("✗ Basic CLI derive test failed")
+            print("вњ— Basic CLI derive test failed")
             print(f"  Error: {result.stderr}")
             return False
 
@@ -74,14 +74,14 @@ def test_cli_derive_with_output():
                 key_bytes = f.read()
 
             if len(key_bytes) == 16:
-                print("✓ CLI derive with output file test passed")
+                print("вњ“ CLI derive with output file test passed")
                 print(f"  Key written: {key_bytes.hex()}")
                 return True
             else:
-                print(f"✗ Wrong key length: {len(key_bytes)} bytes")
+                print(f"вњ— Wrong key length: {len(key_bytes)} bytes")
                 return False
         else:
-            print("✗ CLI derive with output file test failed")
+            print("вњ— CLI derive with output file test failed")
             return False
 
     finally:
@@ -103,11 +103,11 @@ def test_cli_key_hierarchy():
     )
 
     if result.returncode == 0:
-        print("✓ CLI key hierarchy test passed")
+        print("вњ“ CLI key hierarchy test passed")
         print(f"  Output: {result.stdout.strip()[:64]}...")
         return True
     else:
-        print("✗ CLI key hierarchy test failed")
+        print("вњ— CLI key hierarchy test failed")
         print(f"  Error: {result.stderr}")
         return False
 
@@ -131,7 +131,8 @@ if __name__ == "__main__":
 
     print("\n" + "=" * 50)
     if all_passed:
-        print("✅ All KDF Integration tests passed!")
+        print("вњ… All KDF Integration tests passed!")
     else:
-        print("❌ Some KDF Integration tests failed!")
+        print("вќЊ Some KDF Integration tests failed!")
         sys.exit(1)
+

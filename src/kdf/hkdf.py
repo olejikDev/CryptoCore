@@ -1,4 +1,4 @@
-"""
+﻿"""
 HKDF (HMAC-based Key Derivation Function) implementation.
 Simplified version for key hierarchy as specified in Sprint 7.
 """
@@ -8,9 +8,9 @@ import hmac as builtin_hmac
 import hashlib
 from typing import Union, List
 
-# Для совместимости с нашей HMAC реализацией
+# Р”Р»СЏ СЃРѕРІРјРµСЃС‚РёРјРѕСЃС‚Рё СЃ РЅР°С€РµР№ HMAC СЂРµР°Р»РёР·Р°С†РёРµР№
 try:
-    from cryptocore.mac.hmac import HMAC as CustomHMAC
+    from src.mac.hmac import HMAC as CustomHMAC
     HAS_CUSTOM_HMAC = True
 except ImportError:
     HAS_CUSTOM_HMAC = False
@@ -218,7 +218,7 @@ def test_key_uniqueness():
 
     assert len(keys_set) == 100, "All derived keys should be unique"
 
-    print("✓ Key uniqueness tests passed")
+    print("вњ“ Key uniqueness tests passed")
     print(f"  Context separation: {key1.hex()[:16]}... != {key2.hex()[:16]}...")
     print(f"  Generated {len(keys_set)} unique keys")
 
@@ -236,7 +236,7 @@ def test_deterministic_output():
 
     assert key1 == key2 == key3, "Same inputs should produce same output"
 
-    print("✓ Deterministic output test passed")
+    print("вњ“ Deterministic output test passed")
     return True
 
 
@@ -244,3 +244,4 @@ if __name__ == "__main__":
     print("Running HKDF tests...")
     test_deterministic_output()
     test_key_uniqueness()
+

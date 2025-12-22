@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-Интеграционные тесты для HMAC через CLI
+РРЅС‚РµРіСЂР°С†РёРѕРЅРЅС‹Рµ С‚РµСЃС‚С‹ РґР»СЏ HMAC С‡РµСЂРµР· CLI
 """
 
 import os
@@ -10,28 +10,28 @@ import unittest
 
 
 class TestCLIMAC(unittest.TestCase):
-    """Тесты HMAC через CLI"""
+    """РўРµСЃС‚С‹ HMAC С‡РµСЂРµР· CLI"""
 
     def setUp(self):
-        """Настройка тестов"""
-        # Создаем временную директорию для тестов
+        """РќР°СЃС‚СЂРѕР№РєР° С‚РµСЃС‚РѕРІ"""
+        # РЎРѕР·РґР°РµРј РІСЂРµРјРµРЅРЅСѓСЋ РґРёСЂРµРєС‚РѕСЂРёСЋ РґР»СЏ С‚РµСЃС‚РѕРІ
         self.temp_dir = tempfile.mkdtemp()
         self.test_file = os.path.join(self.temp_dir, "test.txt")
 
-        # Записываем тестовые данные
+        # Р—Р°РїРёСЃС‹РІР°РµРј С‚РµСЃС‚РѕРІС‹Рµ РґР°РЅРЅС‹Рµ
         with open(self.test_file, "w") as f:
             f.write("This is test data for HMAC testing.\n")
             f.write("Multiple lines to ensure proper hashing.\n")
 
     def tearDown(self):
-        """Очистка после тестов"""
+        """РћС‡РёСЃС‚РєР° РїРѕСЃР»Рµ С‚РµСЃС‚РѕРІ"""
         import shutil
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
     def run_cryptocore(self, args):
-        """Запуск cryptocore с аргументами"""
-        # Используем cryptocore.py в корне проекта
+        """Р—Р°РїСѓСЃРє cryptocore СЃ Р°СЂРіСѓРјРµРЅС‚Р°РјРё"""
+        # РСЃРїРѕР»СЊР·СѓРµРј cryptocore.py РІ РєРѕСЂРЅРµ РїСЂРѕРµРєС‚Р°
         cmd = ["python", "cryptocore.py"] + args
 
         result = subprocess.run(
@@ -43,7 +43,7 @@ class TestCLIMAC(unittest.TestCase):
         return result
 
     def test_hmac_generation(self):
-        """Генерация HMAC через CLI"""
+        """Р“РµРЅРµСЂР°С†РёСЏ HMAC С‡РµСЂРµР· CLI"""
         key = "00112233445566778899aabbccddeeff"
 
         result = self.run_cryptocore([
@@ -54,27 +54,27 @@ class TestCLIMAC(unittest.TestCase):
             "--input", self.test_file
         ])
 
-        # Проверяем, что команда выполнилась успешно
+        # РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ РєРѕРјР°РЅРґР° РІС‹РїРѕР»РЅРёР»Р°СЃСЊ СѓСЃРїРµС€РЅРѕ
         self.assertEqual(result.returncode, 0)
 
-        # Проверяем формат вывода
+        # РџСЂРѕРІРµСЂСЏРµРј С„РѕСЂРјР°С‚ РІС‹РІРѕРґР°
         output_lines = result.stdout.strip().split('\n')
         self.assertTrue(len(output_lines) > 0)
 
-        # HMAC должен быть hex строкой + имя файла
+        # HMAC РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ hex СЃС‚СЂРѕРєРѕР№ + РёРјСЏ С„Р°Р№Р»Р°
         hmac_line = output_lines[0]
         hmac_parts = hmac_line.split()
         self.assertEqual(len(hmac_parts), 2)
 
-        # Проверяем что HMAC - hex строка (64 символа для SHA-256)
+        # РџСЂРѕРІРµСЂСЏРµРј С‡С‚Рѕ HMAC - hex СЃС‚СЂРѕРєР° (64 СЃРёРјРІРѕР»Р° РґР»СЏ SHA-256)
         hmac_hex = hmac_parts[0]
         self.assertEqual(len(hmac_hex), 64)
 
-        # Проверяем что имя файла правильное
+        # РџСЂРѕРІРµСЂСЏРµРј С‡С‚Рѕ РёРјСЏ С„Р°Р№Р»Р° РїСЂР°РІРёР»СЊРЅРѕРµ
         self.assertEqual(hmac_parts[1], self.test_file)
 
     def test_hmac_generation_with_output(self):
-        """Генерация HMAC с записью в файл"""
+        """Р“РµРЅРµСЂР°С†РёСЏ HMAC СЃ Р·Р°РїРёСЃСЊСЋ РІ С„Р°Р№Р»"""
         key = "00112233445566778899aabbccddeeff"
         hmac_file = os.path.join(self.temp_dir, "test.hmac")
 
@@ -89,22 +89,22 @@ class TestCLIMAC(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0)
 
-        # Проверяем что файл создан
+        # РџСЂРѕРІРµСЂСЏРµРј С‡С‚Рѕ С„Р°Р№Р» СЃРѕР·РґР°РЅ
         self.assertTrue(os.path.exists(hmac_file))
 
-        # Читаем файл и проверяем формат
+        # Р§РёС‚Р°РµРј С„Р°Р№Р» Рё РїСЂРѕРІРµСЂСЏРµРј С„РѕСЂРјР°С‚
         with open(hmac_file, 'r') as f:
             hmac_content = f.read().strip()
 
         hmac_parts = hmac_content.split()
         self.assertEqual(len(hmac_parts), 2)
-        self.assertEqual(len(hmac_parts[0]), 64)  # SHA-256 hex длина
+        self.assertEqual(len(hmac_parts[0]), 64)  # SHA-256 hex РґР»РёРЅР°
 
     def test_hmac_verification_success(self):
-        """Успешная проверка HMAC"""
+        """РЈСЃРїРµС€РЅР°СЏ РїСЂРѕРІРµСЂРєР° HMAC"""
         key = "00112233445566778899aabbccddeeff"
 
-        # Сначала генерируем HMAC
+        # РЎРЅР°С‡Р°Р»Р° РіРµРЅРµСЂРёСЂСѓРµРј HMAC
         hmac_file = os.path.join(self.temp_dir, "test.hmac")
         gen_result = self.run_cryptocore([
             "dgst",
@@ -117,7 +117,7 @@ class TestCLIMAC(unittest.TestCase):
 
         self.assertEqual(gen_result.returncode, 0)
 
-        # Теперь проверяем
+        # РўРµРїРµСЂСЊ РїСЂРѕРІРµСЂСЏРµРј
         verify_result = self.run_cryptocore([
             "dgst",
             "--algorithm", "sha256",
@@ -127,15 +127,15 @@ class TestCLIMAC(unittest.TestCase):
             "--verify", hmac_file
         ])
 
-        # Проверка должна пройти успешно
+        # РџСЂРѕРІРµСЂРєР° РґРѕР»Р¶РЅР° РїСЂРѕР№С‚Рё СѓСЃРїРµС€РЅРѕ
         self.assertEqual(verify_result.returncode, 0)
         self.assertIn("verification successful", verify_result.stdout.lower())
 
     def test_hmac_verification_failure(self):
-        """Неуспешная проверка HMAC (измененный файл)"""
+        """РќРµСѓСЃРїРµС€РЅР°СЏ РїСЂРѕРІРµСЂРєР° HMAC (РёР·РјРµРЅРµРЅРЅС‹Р№ С„Р°Р№Р»)"""
         key = "00112233445566778899aabbccddeeff"
 
-        # Создаем HMAC для оригинального файла
+        # РЎРѕР·РґР°РµРј HMAC РґР»СЏ РѕСЂРёРіРёРЅР°Р»СЊРЅРѕРіРѕ С„Р°Р№Р»Р°
         hmac_file = os.path.join(self.temp_dir, "test.hmac")
         self.run_cryptocore([
             "dgst",
@@ -146,11 +146,11 @@ class TestCLIMAC(unittest.TestCase):
             "--output", hmac_file
         ])
 
-        # Изменяем файл
+        # РР·РјРµРЅСЏРµРј С„Р°Р№Р»
         with open(self.test_file, 'a') as f:
             f.write("\nTampered!")
 
-        # Пытаемся проверить с измененным файлом
+        # РџС‹С‚Р°РµРјСЃСЏ РїСЂРѕРІРµСЂРёС‚СЊ СЃ РёР·РјРµРЅРµРЅРЅС‹Рј С„Р°Р№Р»РѕРј
         verify_result = self.run_cryptocore([
             "dgst",
             "--algorithm", "sha256",
@@ -160,16 +160,16 @@ class TestCLIMAC(unittest.TestCase):
             "--verify", hmac_file
         ])
 
-        # Проверка должна провалиться
+        # РџСЂРѕРІРµСЂРєР° РґРѕР»Р¶РЅР° РїСЂРѕРІР°Р»РёС‚СЊСЃСЏ
         self.assertNotEqual(verify_result.returncode, 0)
         self.assertIn("verification failed", verify_result.stderr.lower())
 
     def test_hmac_wrong_key(self):
-        """Проверка с неправильным ключом"""
+        """РџСЂРѕРІРµСЂРєР° СЃ РЅРµРїСЂР°РІРёР»СЊРЅС‹Рј РєР»СЋС‡РѕРј"""
         key1 = "00112233445566778899aabbccddeeff"
         key2 = "ffeeccbbaa99887766554433221100ff"
 
-        # Генерируем HMAC с первым ключом
+        # Р“РµРЅРµСЂРёСЂСѓРµРј HMAC СЃ РїРµСЂРІС‹Рј РєР»СЋС‡РѕРј
         hmac_file = os.path.join(self.temp_dir, "test.hmac")
         self.run_cryptocore([
             "dgst",
@@ -180,7 +180,7 @@ class TestCLIMAC(unittest.TestCase):
             "--output", hmac_file
         ])
 
-        # Пытаемся проверить с другим ключом
+        # РџС‹С‚Р°РµРјСЃСЏ РїСЂРѕРІРµСЂРёС‚СЊ СЃ РґСЂСѓРіРёРј РєР»СЋС‡РѕРј
         verify_result = self.run_cryptocore([
             "dgst",
             "--algorithm", "sha256",
@@ -190,10 +190,11 @@ class TestCLIMAC(unittest.TestCase):
             "--verify", hmac_file
         ])
 
-        # Проверка должна провалиться
+        # РџСЂРѕРІРµСЂРєР° РґРѕР»Р¶РЅР° РїСЂРѕРІР°Р»РёС‚СЊСЃСЏ
         self.assertNotEqual(verify_result.returncode, 0)
 
 
 if __name__ == "__main__":
     print("Running CLI MAC tests...")
     unittest.main(verbosity=2)
+

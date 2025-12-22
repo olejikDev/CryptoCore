@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-Тесты для модуля CSPRNG (Sprint 3)
-Требования TEST-1, TEST-2, TEST-4
+РўРµСЃС‚С‹ РґР»СЏ РјРѕРґСѓР»СЏ CSPRNG (Sprint 3)
+РўСЂРµР±РѕРІР°РЅРёСЏ TEST-1, TEST-2, TEST-4
 """
 
 import sys
@@ -16,39 +16,39 @@ from src.csprng import generate_random_bytes, generate_random_hex
 
 def test_key_uniqueness():
     """
-    Тест уникальности сгенерированных ключей
-    Требование TEST-2: 1000 уникальных ключей
+    РўРµСЃС‚ СѓРЅРёРєР°Р»СЊРЅРѕСЃС‚Рё СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅРЅС‹С… РєР»СЋС‡РµР№
+    РўСЂРµР±РѕРІР°РЅРёРµ TEST-2: 1000 СѓРЅРёРєР°Р»СЊРЅС‹С… РєР»СЋС‡РµР№
     """
-    print("=== Тест уникальности ключей (TEST-2) ===")
+    print("=== РўРµСЃС‚ СѓРЅРёРєР°Р»СЊРЅРѕСЃС‚Рё РєР»СЋС‡РµР№ (TEST-2) ===")
 
     key_set = set()
     num_keys = 1000
 
     for i in range(num_keys):
         if i % 100 == 0:
-            print(f"  Генерация ключа {i + 1}/{num_keys}...")
+            print(f"  Р“РµРЅРµСЂР°С†РёСЏ РєР»СЋС‡Р° {i + 1}/{num_keys}...")
 
-        # Генерируем 16-байтный ключ
+        # Р“РµРЅРµСЂРёСЂСѓРµРј 16-Р±Р°Р№С‚РЅС‹Р№ РєР»СЋС‡
         key = generate_random_bytes(16)
         key_hex = key.hex()
 
-        # Проверка на уникальность
+        # РџСЂРѕРІРµСЂРєР° РЅР° СѓРЅРёРєР°Р»СЊРЅРѕСЃС‚СЊ
         if key_hex in key_set:
-            print(f"[-] Найден дубликат ключа: {key_hex}")
+            print(f"[-] РќР°Р№РґРµРЅ РґСѓР±Р»РёРєР°С‚ РєР»СЋС‡Р°: {key_hex}")
             return False
 
         key_set.add(key_hex)
 
-    print(f"[+] Успешно сгенерировано {len(key_set)} уникальных ключей")
-    assert len(key_set) == num_keys, f"Ожидалось {num_keys} уникальных ключей, получено {len(key_set)}"
+    print(f"[+] РЈСЃРїРµС€РЅРѕ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅРѕ {len(key_set)} СѓРЅРёРєР°Р»СЊРЅС‹С… РєР»СЋС‡РµР№")
+    assert len(key_set) == num_keys, f"РћР¶РёРґР°Р»РѕСЃСЊ {num_keys} СѓРЅРёРєР°Р»СЊРЅС‹С… РєР»СЋС‡РµР№, РїРѕР»СѓС‡РµРЅРѕ {len(key_set)}"
 
 
 def test_basic_distribution():
     """
-    Базовый тест распределения битов
-    Требование TEST-4: проверка энтропии
+    Р‘Р°Р·РѕРІС‹Р№ С‚РµСЃС‚ СЂР°СЃРїСЂРµРґРµР»РµРЅРёСЏ Р±РёС‚РѕРІ
+    РўСЂРµР±РѕРІР°РЅРёРµ TEST-4: РїСЂРѕРІРµСЂРєР° СЌРЅС‚СЂРѕРїРёРё
     """
-    print("=== Тест распределения битов (TEST-4) ===")
+    print("=== РўРµСЃС‚ СЂР°СЃРїСЂРµРґРµР»РµРЅРёСЏ Р±РёС‚РѕРІ (TEST-4) ===")
 
     num_samples = 1000
     total_bits = 0
@@ -56,46 +56,46 @@ def test_basic_distribution():
 
     for i in range(num_samples):
         if i % 100 == 0:
-            print(f"  Анализ образца {i + 1}/{num_samples}...")
+            print(f"  РђРЅР°Р»РёР· РѕР±СЂР°Р·С†Р° {i + 1}/{num_samples}...")
 
-        # Генерируем 16 байт (128 бит)
+        # Р“РµРЅРµСЂРёСЂСѓРµРј 16 Р±Р°Р№С‚ (128 Р±РёС‚)
         random_bytes = generate_random_bytes(16)
 
-        # Подсчет единичных битов
+        # РџРѕРґСЃС‡РµС‚ РµРґРёРЅРёС‡РЅС‹С… Р±РёС‚РѕРІ
         for byte in random_bytes:
             ones_count += bin(byte).count("1")
             total_bits += 8
 
-    # Вычисляем процент единиц
+    # Р’С‹С‡РёСЃР»СЏРµРј РїСЂРѕС†РµРЅС‚ РµРґРёРЅРёС†
     ones_percentage = (ones_count / total_bits) * 100
 
-    print(f"[+] Всего битов: {total_bits:,}")
-    print(f"[+] Единичных битов: {ones_count:,} ({ones_percentage:.2f}%)")
+    print(f"[+] Р’СЃРµРіРѕ Р±РёС‚РѕРІ: {total_bits:,}")
+    print(f"[+] Р•РґРёРЅРёС‡РЅС‹С… Р±РёС‚РѕРІ: {ones_count:,} ({ones_percentage:.2f}%)")
 
-    # Проверяем, что процент близок к 50%
-    # Для истинно случайных данных ожидается ~50%
+    # РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ РїСЂРѕС†РµРЅС‚ Р±Р»РёР·РѕРє Рє 50%
+    # Р”Р»СЏ РёСЃС‚РёРЅРЅРѕ СЃР»СѓС‡Р°Р№РЅС‹С… РґР°РЅРЅС‹С… РѕР¶РёРґР°РµС‚СЃСЏ ~50%
     if 45 <= ones_percentage <= 55:
-        print(f"[+] Распределение битов соответствует ожиданиям (~50%)")
+        print(f"[+] Р Р°СЃРїСЂРµРґРµР»РµРЅРёРµ Р±РёС‚РѕРІ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓРµС‚ РѕР¶РёРґР°РЅРёСЏРј (~50%)")
         return True
     else:
-        print(f"[-] Распределение битов не соответствует ожиданиям: {ones_percentage:.2f}%")
+        print(f"[-] Р Р°СЃРїСЂРµРґРµР»РµРЅРёРµ Р±РёС‚РѕРІ РЅРµ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓРµС‚ РѕР¶РёРґР°РЅРёСЏРј: {ones_percentage:.2f}%")
         return False
 
 
 def test_key_generation_integration():
     """
-    Интеграционный тест с генерацией ключа
-    Требование TEST-1: шифрование без ключа -> дешифрование с printed key
+    РРЅС‚РµРіСЂР°С†РёРѕРЅРЅС‹Р№ С‚РµСЃС‚ СЃ РіРµРЅРµСЂР°С†РёРµР№ РєР»СЋС‡Р°
+    РўСЂРµР±РѕРІР°РЅРёРµ TEST-1: С€РёС„СЂРѕРІР°РЅРёРµ Р±РµР· РєР»СЋС‡Р° -> РґРµС€РёС„СЂРѕРІР°РЅРёРµ СЃ printed key
     """
-    print("=== Интеграционный тест (TEST-1) ===")
+    print("=== РРЅС‚РµРіСЂР°С†РёРѕРЅРЅС‹Р№ С‚РµСЃС‚ (TEST-1) ===")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Создаем тестовый файл
+        # РЎРѕР·РґР°РµРј С‚РµСЃС‚РѕРІС‹Р№ С„Р°Р№Р»
         plain_file = os.path.join(tmpdir, "plain.txt")
         with open(plain_file, "wb") as f:
             f.write(b"Test data for CryptoCore with auto-generated key\n" * 10)
 
-        # Шифруем без ключа
+        # РЁРёС„СЂСѓРµРј Р±РµР· РєР»СЋС‡Р°
         enc_file = os.path.join(tmpdir, "encrypted.bin")
         cmd = [
             sys.executable, "cryptocore.py",
@@ -106,29 +106,29 @@ def test_key_generation_integration():
             "-output", enc_file
         ]
 
-        print("Запуск шифрования без ключа...")
+        print("Р—Р°РїСѓСЃРє С€РёС„СЂРѕРІР°РЅРёСЏ Р±РµР· РєР»СЋС‡Р°...")
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode != 0:
-            print(f"[-] Ошибка шифрования: {result.stderr}")
+            print(f"[-] РћС€РёР±РєР° С€РёС„СЂРѕРІР°РЅРёСЏ: {result.stderr}")
             return False
 
-        # Извлекаем сгенерированный ключ из вывода
+        # РР·РІР»РµРєР°РµРј СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅРЅС‹Р№ РєР»СЋС‡ РёР· РІС‹РІРѕРґР°
         output_lines = result.stdout.split('\n')
         generated_key = None
         for line in output_lines:
-            if "Сгенерирован случайный ключ:" in line:
+            if "РЎРіРµРЅРµСЂРёСЂРѕРІР°РЅ СЃР»СѓС‡Р°Р№РЅС‹Р№ РєР»СЋС‡:" in line:
                 generated_key = line.split(":")[1].strip()
                 break
 
         if not generated_key:
-            print("[-] Не удалось найти сгенерированный ключ в выводе")
-            print(f"Вывод программы: {result.stdout[:500]}...")
+            print("[-] РќРµ СѓРґР°Р»РѕСЃСЊ РЅР°Р№С‚Рё СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅРЅС‹Р№ РєР»СЋС‡ РІ РІС‹РІРѕРґРµ")
+            print(f"Р’С‹РІРѕРґ РїСЂРѕРіСЂР°РјРјС‹: {result.stdout[:500]}...")
             return False
 
-        print(f"[+] Ключ сгенерирован: {generated_key}")
+        print(f"[+] РљР»СЋС‡ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅ: {generated_key}")
 
-        # Дешифруем с сгенерированным ключом
+        # Р”РµС€РёС„СЂСѓРµРј СЃ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅРЅС‹Рј РєР»СЋС‡РѕРј
         dec_file = os.path.join(tmpdir, "decrypted.txt")
         cmd = [
             sys.executable, "cryptocore.py",
@@ -140,50 +140,50 @@ def test_key_generation_integration():
             "-output", dec_file
         ]
 
-        print("Запуск дешифрования с сгенерированным ключом...")
+        print("Р—Р°РїСѓСЃРє РґРµС€РёС„СЂРѕРІР°РЅРёСЏ СЃ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅРЅС‹Рј РєР»СЋС‡РѕРј...")
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode != 0:
-            print(f"[-] Ошибка дешифрования: {result.stderr}")
+            print(f"[-] РћС€РёР±РєР° РґРµС€РёС„СЂРѕРІР°РЅРёСЏ: {result.stderr}")
             return False
 
-        # Сравниваем файлы
+        # РЎСЂР°РІРЅРёРІР°РµРј С„Р°Р№Р»С‹
         with open(plain_file, "rb") as f1, open(dec_file, "rb") as f2:
             original = f1.read()
             decrypted = f2.read()
 
             if original == decrypted:
-                print("[+] Интеграционный тест пройден успешно!")
-                print(f"   Оригинал: {len(original)} байт")
-                print(f"   Расшифровано: {len(decrypted)} байт")
+                print("[+] РРЅС‚РµРіСЂР°С†РёРѕРЅРЅС‹Р№ С‚РµСЃС‚ РїСЂРѕР№РґРµРЅ СѓСЃРїРµС€РЅРѕ!")
+                print(f"   РћСЂРёРіРёРЅР°Р»: {len(original)} Р±Р°Р№С‚")
+                print(f"   Р Р°СЃС€РёС„СЂРѕРІР°РЅРѕ: {len(decrypted)} Р±Р°Р№С‚")
                 return True
             else:
-                print("[-] Файлы не совпадают после дешифрования")
+                print("[-] Р¤Р°Р№Р»С‹ РЅРµ СЃРѕРІРїР°РґР°СЋС‚ РїРѕСЃР»Рµ РґРµС€РёС„СЂРѕРІР°РЅРёСЏ")
 
-                # Поиск различий
+                # РџРѕРёСЃРє СЂР°Р·Р»РёС‡РёР№
                 min_len = min(len(original), len(decrypted))
                 for i in range(min_len):
                     if original[i] != decrypted[i]:
-                        print(f"   Первое различие на позиции {i}: 0x{original[i]:02x} vs 0x{decrypted[i]:02x}")
+                        print(f"   РџРµСЂРІРѕРµ СЂР°Р·Р»РёС‡РёРµ РЅР° РїРѕР·РёС†РёРё {i}: 0x{original[i]:02x} vs 0x{decrypted[i]:02x}")
                         break
 
                 if len(original) != len(decrypted):
-                    print(f"   Разная длина: {len(original)} vs {len(decrypted)} байт")
+                    print(f"   Р Р°Р·РЅР°СЏ РґР»РёРЅР°: {len(original)} vs {len(decrypted)} Р±Р°Р№С‚")
 
                 return False
 
 
 def test_nist_preparation():
     """
-    Подготовка файла для тестирования NIST STS
-    Требование TEST-3: генерация большого файла для NIST тестов
+    РџРѕРґРіРѕС‚РѕРІРєР° С„Р°Р№Р»Р° РґР»СЏ С‚РµСЃС‚РёСЂРѕРІР°РЅРёСЏ NIST STS
+    РўСЂРµР±РѕРІР°РЅРёРµ TEST-3: РіРµРЅРµСЂР°С†РёСЏ Р±РѕР»СЊС€РѕРіРѕ С„Р°Р№Р»Р° РґР»СЏ NIST С‚РµСЃС‚РѕРІ
     """
-    print("=== Подготовка файла для NIST тестов (TEST-3) ===")
+    print("=== РџРѕРґРіРѕС‚РѕРІРєР° С„Р°Р№Р»Р° РґР»СЏ NIST С‚РµСЃС‚РѕРІ (TEST-3) ===")
 
     total_size = 10_000_000  # 10 MB
     output_file = "nist_test_data.bin"
 
-    print(f"Генерация {total_size} байтов случайных данных...")
+    print(f"Р“РµРЅРµСЂР°С†РёСЏ {total_size} Р±Р°Р№С‚РѕРІ СЃР»СѓС‡Р°Р№РЅС‹С… РґР°РЅРЅС‹С…...")
 
     with open(output_file, 'wb') as f:
         bytes_written = 0
@@ -191,75 +191,75 @@ def test_nist_preparation():
 
         while bytes_written < total_size:
             if bytes_written % (1024 * 1024) == 0:
-                print(f"  Сгенерировано {bytes_written / 1024 / 1024:.1f} MB...")
+                print(f"  РЎРіРµРЅРµСЂРёСЂРѕРІР°РЅРѕ {bytes_written / 1024 / 1024:.1f} MB...")
 
-            # Вычисляем размер текущего чанка
+            # Р’С‹С‡РёСЃР»СЏРµРј СЂР°Р·РјРµСЂ С‚РµРєСѓС‰РµРіРѕ С‡Р°РЅРєР°
             current_chunk_size = min(chunk_size, total_size - bytes_written)
 
-            # Генерируем случайные данные
+            # Р“РµРЅРµСЂРёСЂСѓРµРј СЃР»СѓС‡Р°Р№РЅС‹Рµ РґР°РЅРЅС‹Рµ
             random_chunk = generate_random_bytes(current_chunk_size)
 
-            # Записываем в файл
+            # Р—Р°РїРёСЃС‹РІР°РµРј РІ С„Р°Р№Р»
             f.write(random_chunk)
             bytes_written += current_chunk_size
 
-    print(f"[+] Файл {output_file} успешно создан ({bytes_written:,} байтов)")
-    print(f"\n[+] Инструкции для запуска NIST STS:")
-    print(f"1. Скачайте NIST Statistical Test Suite с https://csrc.nist.gov/projects/random-bit-generation")
-    print(f"2. Запустите: ./assess {total_size // 8}")
-    print(f"3. Укажите путь к файлу: {output_file}")
-    print(f"4. Следуйте инструкциям программы")
+    print(f"[+] Р¤Р°Р№Р» {output_file} СѓСЃРїРµС€РЅРѕ СЃРѕР·РґР°РЅ ({bytes_written:,} Р±Р°Р№С‚РѕРІ)")
+    print(f"\n[+] РРЅСЃС‚СЂСѓРєС†РёРё РґР»СЏ Р·Р°РїСѓСЃРєР° NIST STS:")
+    print(f"1. РЎРєР°С‡Р°Р№С‚Рµ NIST Statistical Test Suite СЃ https://csrc.nist.gov/projects/random-bit-generation")
+    print(f"2. Р—Р°РїСѓСЃС‚РёС‚Рµ: ./assess {total_size // 8}")
+    print(f"3. РЈРєР°Р¶РёС‚Рµ РїСѓС‚СЊ Рє С„Р°Р№Р»Сѓ: {output_file}")
+    print(f"4. РЎР»РµРґСѓР№С‚Рµ РёРЅСЃС‚СЂСѓРєС†РёСЏРј РїСЂРѕРіСЂР°РјРјС‹")
 
     return True
 
 
 def test_error_handling():
-    """Тест обработки ошибок CSPRNG"""
-    print("=== Тест обработки ошибок ===")
+    """РўРµСЃС‚ РѕР±СЂР°Р±РѕС‚РєРё РѕС€РёР±РѕРє CSPRNG"""
+    print("=== РўРµСЃС‚ РѕР±СЂР°Р±РѕС‚РєРё РѕС€РёР±РѕРє ===")
 
-    # Тест 1: Отрицательное количество байтов
+    # РўРµСЃС‚ 1: РћС‚СЂРёС†Р°С‚РµР»СЊРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ Р±Р°Р№С‚РѕРІ
     try:
         generate_random_bytes(-1)
-        print("[-] Не сгенерирована ошибка для отрицательного значения")
+        print("[-] РќРµ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅР° РѕС€РёР±РєР° РґР»СЏ РѕС‚СЂРёС†Р°С‚РµР»СЊРЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ")
         return False
     except ValueError:
-        print("[+] Корректно обработана ошибка для отрицательного значения")
+        print("[+] РљРѕСЂСЂРµРєС‚РЅРѕ РѕР±СЂР°Р±РѕС‚Р°РЅР° РѕС€РёР±РєР° РґР»СЏ РѕС‚СЂРёС†Р°С‚РµР»СЊРЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ")
 
-    # Тест 2: Нулевое количество байтов
+    # РўРµСЃС‚ 2: РќСѓР»РµРІРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ Р±Р°Р№С‚РѕРІ
     try:
         generate_random_bytes(0)
-        print("[-] Не сгенерирована ошибка для нулевого значения")
+        print("[-] РќРµ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅР° РѕС€РёР±РєР° РґР»СЏ РЅСѓР»РµРІРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ")
         return False
     except ValueError:
-        print("[+] Корректно обработана ошибка для нулевого значения")
+        print("[+] РљРѕСЂСЂРµРєС‚РЅРѕ РѕР±СЂР°Р±РѕС‚Р°РЅР° РѕС€РёР±РєР° РґР»СЏ РЅСѓР»РµРІРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ")
 
-    # Тест 3: Корректная генерация
+    # РўРµСЃС‚ 3: РљРѕСЂСЂРµРєС‚РЅР°СЏ РіРµРЅРµСЂР°С†РёСЏ
     try:
         result = generate_random_bytes(16)
         if len(result) == 16:
-            print("[+] Корректно сгенерировано 16 байтов")
+            print("[+] РљРѕСЂСЂРµРєС‚РЅРѕ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅРѕ 16 Р±Р°Р№С‚РѕРІ")
         else:
-            print(f"[-] Неправильная длина: {len(result)} байтов")
+            print(f"[-] РќРµРїСЂР°РІРёР»СЊРЅР°СЏ РґР»РёРЅР°: {len(result)} Р±Р°Р№С‚РѕРІ")
             return False
     except Exception as e:
-        print(f"[-] Неожиданная ошибка: {e}")
+        print(f"[-] РќРµРѕР¶РёРґР°РЅРЅР°СЏ РѕС€РёР±РєР°: {e}")
         return False
 
     return True
 
 
 def main():
-    """Основная функция тестирования"""
+    """РћСЃРЅРѕРІРЅР°СЏ С„СѓРЅРєС†РёСЏ С‚РµСЃС‚РёСЂРѕРІР°РЅРёСЏ"""
     print("=" * 70)
-    print("ТЕСТЫ CSPRNG (Sprint 3)")
-    print("Требования TEST-1, TEST-2, TEST-3, TEST-4")
+    print("РўР•РЎРўР« CSPRNG (Sprint 3)")
+    print("РўСЂРµР±РѕРІР°РЅРёСЏ TEST-1, TEST-2, TEST-3, TEST-4")
     print("=" * 70)
 
     tests = [
-        ("Обработка ошибок", test_error_handling),
-        ("Уникальность ключей (TEST-2)", test_key_uniqueness),
-        ("Распределение битов (TEST-4)", test_basic_distribution),
-        ("Интеграция с CryptoCore (TEST-1)", test_key_generation_integration),
+        ("РћР±СЂР°Р±РѕС‚РєР° РѕС€РёР±РѕРє", test_error_handling),
+        ("РЈРЅРёРєР°Р»СЊРЅРѕСЃС‚СЊ РєР»СЋС‡РµР№ (TEST-2)", test_key_uniqueness),
+        ("Р Р°СЃРїСЂРµРґРµР»РµРЅРёРµ Р±РёС‚РѕРІ (TEST-4)", test_basic_distribution),
+        ("РРЅС‚РµРіСЂР°С†РёСЏ СЃ CryptoCore (TEST-1)", test_key_generation_integration),
     ]
 
     results = {}
@@ -268,43 +268,44 @@ def main():
         try:
             results[test_name] = test_func()
         except Exception as e:
-            print(f"[-] Ошибка при выполнении теста: {e}")
+            print(f"[-] РћС€РёР±РєР° РїСЂРё РІС‹РїРѕР»РЅРµРЅРёРё С‚РµСЃС‚Р°: {e}")
             import traceback
             traceback.print_exc()
             results[test_name] = False
 
-    # Опционально: подготовка NIST тестов
-    print("\n--- Подготовка NIST тестов (TEST-3, опционально) ---")
+    # РћРїС†РёРѕРЅР°Р»СЊРЅРѕ: РїРѕРґРіРѕС‚РѕРІРєР° NIST С‚РµСЃС‚РѕРІ
+    print("\n--- РџРѕРґРіРѕС‚РѕРІРєР° NIST С‚РµСЃС‚РѕРІ (TEST-3, РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ) ---")
     try:
         test_nist_preparation()
-        print("[+] Файл для NIST тестов подготовлен")
+        print("[+] Р¤Р°Р№Р» РґР»СЏ NIST С‚РµСЃС‚РѕРІ РїРѕРґРіРѕС‚РѕРІР»РµРЅ")
     except Exception as e:
-        print(f"[-] Ошибка при подготовке NIST тестов: {e}")
-        print("  (Это не влияет на общий результат тестов)")
+        print(f"[-] РћС€РёР±РєР° РїСЂРё РїРѕРґРіРѕС‚РѕРІРєРµ NIST С‚РµСЃС‚РѕРІ: {e}")
+        print("  (Р­С‚Рѕ РЅРµ РІР»РёСЏРµС‚ РЅР° РѕР±С‰РёР№ СЂРµР·СѓР»СЊС‚Р°С‚ С‚РµСЃС‚РѕРІ)")
 
-    # Итоги
+    # РС‚РѕРіРё
     print("\n" + "=" * 70)
-    print("ИТОГИ ТЕСТИРОВАНИЯ CSPRNG")
+    print("РРўРћР“Р РўР•РЎРўРР РћР’РђРќРРЇ CSPRNG")
     print("=" * 70)
 
     all_passed = True
     for test_name, passed in results.items():
-        status = "✅ УСПЕХ" if passed else "❌ ОШИБКА"
+        status = "вњ… РЈРЎРџР•РҐ" if passed else "вќЊ РћРЁРР‘РљРђ"
         print(f"{test_name:40} : {status}")
         if not passed:
             all_passed = False
 
     if all_passed:
-        print("\n[+] ВСЕ ТЕСТЫ SPRINT 3 ПРОЙДЕНЫ!")
-        print("    • TEST-1: Key Generation Test ✓")
-        print("    • TEST-2: Uniqueness Test ✓")
-        print("    • TEST-4: Basic Distribution Test ✓")
-        print("    • TEST-3: NIST тесты подготовлены ✓")
+        print("\n[+] Р’РЎР• РўР•РЎРўР« SPRINT 3 РџР РћР™Р”Р•РќР«!")
+        print("    вЂў TEST-1: Key Generation Test вњ“")
+        print("    вЂў TEST-2: Uniqueness Test вњ“")
+        print("    вЂў TEST-4: Basic Distribution Test вњ“")
+        print("    вЂў TEST-3: NIST С‚РµСЃС‚С‹ РїРѕРґРіРѕС‚РѕРІР»РµРЅС‹ вњ“")
         sys.exit(0)
     else:
-        print("\n[-] НЕКОТОРЫЕ ТЕСТЫ НЕ ПРОЙДЕНЫ")
+        print("\n[-] РќР•РљРћРўРћР Р«Р• РўР•РЎРўР« РќР• РџР РћР™Р”Р•РќР«")
         sys.exit(1)
 
 
 if __name__ == "__main__":
     main()
+

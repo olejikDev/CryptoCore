@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 AES Cipher Implementation
 Provides AES primitive for all modes of operation
@@ -118,7 +118,7 @@ def test_aes():
     decrypted = aes.decrypt_block(ciphertext)
 
     assert decrypted == plaintext
-    print("✓ AES block encryption/decryption test passed")
+    print("вњ“ AES block encryption/decryption test passed")
 
     # Test full encryption
     data = b"Hello, AES World!"
@@ -126,10 +126,11 @@ def test_aes():
     decrypted = aes.decrypt(encrypted)
 
     assert decrypted == data
-    print("✓ AES full encryption/decryption test passed")
+    print("вњ“ AES full encryption/decryption test passed")
 
     return True
 
 
 if __name__ == "__main__":
     test_aes()
+

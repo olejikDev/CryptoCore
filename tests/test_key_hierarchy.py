@@ -1,4 +1,4 @@
-"""
+﻿"""
 Test key hierarchy (HKDF-style) implementation.
 """
 import sys
@@ -19,10 +19,10 @@ def test_key_hierarchy_deterministic():
     key2 = derive_key(master, context, 32)
 
     if key1 == key2:
-        print("✓ Deterministic test passed")
+        print("вњ“ Deterministic test passed")
         return True
     else:
-        print("✗ Deterministic test failed")
+        print("вњ— Deterministic test failed")
         print(f"  First:  {key1.hex()[:32]}...")
         print(f"  Second: {key2.hex()[:32]}...")
         return False
@@ -38,10 +38,10 @@ def test_context_separation():
 
     # All should be different
     if key1 != key2 and key1 != key3 and key2 != key3:
-        print("✓ Context separation test passed")
+        print("вњ“ Context separation test passed")
         return True
     else:
-        print("✗ Context separation test failed")
+        print("вњ— Context separation test failed")
         print(f"  Key1 (encryption): {key1.hex()[:16]}...")
         print(f"  Key2 (auth):       {key2.hex()[:16]}...")
         print(f"  Key3 (key_enc):    {key3.hex()[:16]}...")
@@ -60,9 +60,9 @@ def test_variable_length():
         key = derive_key(master, context, length)
 
         if len(key) == length:
-            print(f"✓ Length test {length} bytes passed")
+            print(f"вњ“ Length test {length} bytes passed")
         else:
-            print(f"✗ Length test {length} bytes failed")
+            print(f"вњ— Length test {length} bytes failed")
             print(f"  Expected {length} bytes, got {len(key)} bytes")
             all_passed = False
 
@@ -82,13 +82,13 @@ def test_master_key_sensitivity():
         # Also check they're not just slightly different
         diff_bytes = sum(a != b for a, b in zip(key1, key2))
         if diff_bytes > 20:  # At least 20 bytes should differ
-            print(f"✓ Master key sensitivity test passed ({diff_bytes}/32 bytes differ)")
+            print(f"вњ“ Master key sensitivity test passed ({diff_bytes}/32 bytes differ)")
             return True
         else:
-            print(f"✗ Master key sensitivity test failed (only {diff_bytes}/32 bytes differ)")
+            print(f"вњ— Master key sensitivity test failed (only {diff_bytes}/32 bytes differ)")
             return False
     else:
-        print("✗ Master key sensitivity test failed (keys are identical!)")
+        print("вњ— Master key sensitivity test failed (keys are identical!)")
         return False
 
 
@@ -115,7 +115,8 @@ if __name__ == "__main__":
 
     print("\n" + "=" * 50)
     if all_passed:
-        print("✅ All Key Hierarchy tests passed!")
+        print("вњ… All Key Hierarchy tests passed!")
     else:
-        print("❌ Some Key Hierarchy tests failed!")
+        print("вќЊ Some Key Hierarchy tests failed!")
         sys.exit(1)
+

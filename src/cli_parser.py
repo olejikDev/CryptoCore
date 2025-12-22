@@ -1,10 +1,9 @@
-import argparse
+﻿import argparse
 import sys
 import os
 import warnings
-import re
-from cryptocore.file_io import read_file, write_file, read_file_with_iv, write_file_with_iv, read_file_with_iv_or_none
-from cryptocore.csprng import generate_random_bytes
+from src.file_io import read_file, write_file, read_file_with_iv_or_none
+from src.csprng import generate_random_bytes
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -106,7 +105,6 @@ def parse_args():
         """
     )
 
-    # Создаем субпарсеры для двух разных команд
     subparsers = parser.add_subparsers(dest="command", help="Available commands", required=True)
 
     # ================== ENCRYPT/DECRYPT COMMAND ==================
@@ -184,20 +182,17 @@ def parse_args():
         help="Output file for hash (optional)"
     )
 
-    # НОВЫЙ АРГУМЕНТ: HMAC режим
     dgst_parser.add_argument(
         "--hmac",
         action="store_true",
         help="Enable HMAC mode (requires --key)"
     )
 
-    # НОВЫЙ АРГУМЕНТ: HMAC ключ (только для режима HMAC)
     dgst_parser.add_argument(
         "--key",
         help="HMAC key as hexadecimal string (required when using --hmac)"
     )
 
-    # НОВЫЙ АРГУМЕНТ: Проверка HMAC
     dgst_parser.add_argument(
         "--verify",
         help="Verify HMAC against file containing expected value (requires --hmac and --key)"
@@ -269,21 +264,16 @@ def check_weak_key(key_bytes):
     if all(b == key_bytes[0] for b in key_bytes):
         return True, "Key contains all identical bytes"
 
-    # Check for sequential hex pairs: 00, 11, 22, 33, ..., ff
-    # Ключ: 00112233445566778899aabbccddeeff
-    # Это пары: 00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
-
+    # Check for sequential hex pairs
     is_hex_pairs = True
-    for i in range(0, 32, 2):  # 16 байт = 32 hex символа
-        hex_pair = key_bytes.hex()[i:i + 2]  # берем пару hex символов
+    for i in range(0, 32, 2):
+        hex_pair = key_bytes.hex()[i:i + 2]
 
-        # Проверяем, что оба символа одинаковые
         if hex_pair[0] != hex_pair[1]:
             is_hex_pairs = False
             break
 
-        # Проверяем последовательность: 00, 11, 22, ..., ff
-        expected_value = i // 2  # 0, 1, 2, ..., 15
+        expected_value = i // 2
         if int(hex_pair, 16) != expected_value:
             is_hex_pairs = False
             break
@@ -291,7 +281,7 @@ def check_weak_key(key_bytes):
     if is_hex_pairs:
         return True, "Key contains sequential repeating hex pairs (00, 11, 22, ..., ff)"
 
-    # Check for simple sequential bytes: 0x00, 0x01, 0x02, ...
+    # Check for simple sequential bytes
     is_sequential = True
     for i in range(16):
         if key_bytes[i] != i:
@@ -301,7 +291,7 @@ def check_weak_key(key_bytes):
     if is_sequential:
         return True, "Key contains simple sequential bytes (0x00, 0x01, 0x02, ...)"
 
-    # Check for reverse sequential: 0xff, 0xfe, 0xfd, ...
+    # Check for reverse sequential
     is_reverse = True
     for i in range(16):
         if key_bytes[i] != (0xff - i):
@@ -311,7 +301,7 @@ def check_weak_key(key_bytes):
     if is_reverse:
         return True, "Key contains reverse sequential bytes (0xff, 0xfe, 0xfd, ...)"
 
-    # Check for low entropy (few unique bytes)
+    # Check for low entropy
     unique_bytes = len(set(key_bytes))
     if unique_bytes < 4:
         return True, f"Key has very low entropy (only {unique_bytes} unique bytes)"
@@ -323,8 +313,6 @@ def check_weak_key(key_bytes):
         if 16 % pattern_size == 0:
             pattern = key_bytes[:pattern_size]
             repetitions = 16 // pattern_size
-
-            # Создаем ожидаемый ключ из повторяющегося паттерна
             expected = pattern * repetitions
 
             if key_bytes == expected:
@@ -347,7 +335,6 @@ def check_weak_key(key_bytes):
 
 def validate_key(key_hex, is_encrypt=True):
     """Validate and convert hex key to bytes, or generate if not provided"""
-    # SPRINT 3: Если ключ не предоставлен при шифровании, генерируем его
     if is_encrypt and not key_hex:
         print(f"[INFO] No key provided, generating secure random key...", file=sys.stderr)
         try:
@@ -359,13 +346,11 @@ def validate_key(key_hex, is_encrypt=True):
             print(f"Error: Failed to generate random key: {e}", file=sys.stderr)
             sys.exit(1)
 
-    # Если ключ не предоставлен при дешифровании - ошибка
     if not key_hex:
         print("Error: Key is required for decryption", file=sys.stderr)
         sys.exit(1)
 
     try:
-        # Убираем префикс 0x если есть
         if key_hex.startswith('0x') or key_hex.startswith('0X'):
             key_hex = key_hex[2:]
 
@@ -376,7 +361,7 @@ def validate_key(key_hex, is_encrypt=True):
             print(f"       Received: {key_hex} ({len(key_hex)} chars = {len(key_bytes)} bytes)", file=sys.stderr)
             sys.exit(1)
 
-        # SPRINT 3: Проверка на слабый ключ (предупреждение, не ошибка)
+        # Check for weak key
         is_weak, reason = check_weak_key(key_bytes)
         if is_weak:
             warnings.warn(
@@ -384,7 +369,6 @@ def validate_key(key_hex, is_encrypt=True):
                 f"Consider using a stronger key for better security.",
                 UserWarning
             )
-            # Не выходим с ошибкой, только предупреждение
 
         return key_bytes
     except ValueError as e:
@@ -405,12 +389,12 @@ def validate_iv(iv_hex, mode, encrypt):
 
         iv_bytes = bytes.fromhex(iv_hex)
 
-        # ИСПРАВЛЕНИЕ: Разная длина IV для разных режимов
+        # Different IV length for different modes
         if mode == "gcm":
-            required_len = 12  # GCM использует 12-байтный nonce
+            required_len = 12  # GCM uses 12-byte nonce
             error_msg = "Nonce must be 12 bytes (24 hex characters) for GCM"
         else:
-            required_len = 16  # Остальные режимы используют 16-байтный IV
+            required_len = 16  # Other modes use 16-byte IV
             error_msg = "IV must be 16 bytes (32 hex characters)"
 
         if len(iv_bytes) != required_len:
@@ -418,8 +402,8 @@ def validate_iv(iv_hex, mode, encrypt):
             print(f"       Received: {iv_hex} ({len(iv_hex)} chars = {len(iv_bytes)} bytes)", file=sys.stderr)
             sys.exit(1)
 
-        # Предупреждение если IV предоставлен при шифровании
-        if encrypt and mode != "gcm":  # GCM всегда генерирует nonce
+        # Warning if IV provided for encryption
+        if encrypt and mode != "gcm":  # GCM always generates nonce
             warnings.warn(
                 f"Warning: IV provided for encryption in {mode} mode. "
                 f"A random IV will be generated instead.",
@@ -457,7 +441,6 @@ def validate_aad(aad_hex):
 
 def validate_derive_args(args):
     """Validate derive command arguments"""
-    # Check password source
     if not args.password and not args.password_file:
         print("Error: Either --password or --password-file must be specified", file=sys.stderr)
         sys.exit(1)
@@ -466,25 +449,20 @@ def validate_derive_args(args):
         print("Error: Cannot use both --password and --password-file", file=sys.stderr)
         sys.exit(1)
 
-    # Validate iterations
     if args.iterations < 1:
         print("Error: Iterations must be >= 1", file=sys.stderr)
         sys.exit(1)
 
-    # Validate length
     if args.length < 1:
         print("Error: Key length must be >= 1", file=sys.stderr)
         sys.exit(1)
 
-    # Validate salt if provided
     if args.salt:
         try:
-            # Remove 0x prefix if present
             salt_hex = args.salt
             if salt_hex.startswith('0x') or salt_hex.startswith('0X'):
                 salt_hex = salt_hex[2:]
 
-            # Try to convert to bytes for validation
             bytes.fromhex(salt_hex)
         except ValueError:
             print(f"Error: Invalid salt format", file=sys.stderr)
@@ -494,23 +472,10 @@ def validate_derive_args(args):
 
 def get_mode_class(mode):
     """Return the appropriate mode class"""
-    if mode == "ecb":
-        from cryptocore.modes.ecb import ECBMode
-        return ECBMode
-    elif mode == "cbc":
-        from cryptocore.modes.cbc import CBCMode
-        return CBCMode
-    elif mode == "cfb":
-        from cryptocore.modes.cfb import CFBMode
-        return CFBMode
-    elif mode == "ofb":
-        from cryptocore.modes.ofb import OFBMode
-        return OFBMode
-    elif mode == "ctr":
-        from cryptocore.modes.ctr import CTRMode
-        return CTRMode
-    elif mode in ["gcm", "etm"]:
-        return mode
+    from src.modes import MODES
+
+    if mode in MODES:
+        return MODES[mode]
 
     print(f"Error: Mode '{mode}' not implemented", file=sys.stderr)
     sys.exit(1)
@@ -521,7 +486,6 @@ def get_default_output_filename(input_file, encrypt):
     if encrypt:
         return input_file + ".enc"
     else:
-        # Если файл уже имеет расширение .enc
         if input_file.endswith('.enc'):
             return input_file[:-4] + ".dec"
         else:
@@ -529,19 +493,19 @@ def get_default_output_filename(input_file, encrypt):
 
 
 def handle_gcm_mode(encrypt, key, input_file, output_file, aad, iv=None):
-    """Обработка режима GCM"""
+    """Handle GCM mode"""
     try:
-        from cryptocore.modes.gcm import GCM, AuthenticationError
+        from src.modes.gcm import GCM, AuthenticationError
 
         if encrypt:
-            # ШИФРОВАНИЕ GCM
+            # GCM ENCRYPTION
             gcm = GCM(key)
             data = read_file(input_file)
 
-            # Шифруем с AAD
+            # Encrypt with AAD
             ciphertext = gcm.encrypt(data, aad)
 
-            # Записываем результат (nonce + ciphertext + tag)
+            # Write result (nonce + ciphertext + tag)
             write_file(output_file, ciphertext)
 
             print(f"Success: GCM encrypted data written to {output_file}")
@@ -554,8 +518,7 @@ def handle_gcm_mode(encrypt, key, input_file, output_file, aad, iv=None):
             print(f"Expected structure: 12(nonce) + {len(data)}(ciphertext) + 16(tag) = {12 + len(data) + 16}")
 
         else:
-            # ДЕШИФРОВАНИЕ GCM
-            # Читаем входные данные
+            # GCM DECRYPTION
             ciphertext = read_file(input_file)
 
             print(f"DEBUG: Input file length: {len(ciphertext)} bytes")
@@ -566,41 +529,30 @@ def handle_gcm_mode(encrypt, key, input_file, output_file, aad, iv=None):
                 sys.exit(1)
 
             if iv is not None:
-                # Используем предоставленный nonce
+                # Use provided nonce
                 if len(iv) != 12:
                     print(f"Error: Nonce must be 12 bytes for GCM", file=sys.stderr)
                     sys.exit(1)
                 nonce = iv
-                # Данные без nonce (предполагаем что nonce не в файле)
                 data_to_decrypt = ciphertext
                 print(f"DEBUG: Using provided nonce: {nonce.hex()}")
                 print(f"DEBUG: Data to decrypt length: {len(data_to_decrypt)} bytes")
 
-                # Создаем объект GCM с предоставленным nonce
                 gcm = GCM(key, nonce)
             else:
-                # Извлекаем nonce из файла (первые 12 байт)
+                # Extract nonce from file (first 12 bytes)
                 nonce = ciphertext[:12]
-                data_to_decrypt = ciphertext  # остальные данные
+                data_to_decrypt = ciphertext  # remaining data
                 print(f"DEBUG: Extracted nonce from file: {nonce.hex()}")
                 print(f"DEBUG: Data to decrypt (without nonce) length: {len(data_to_decrypt)} bytes")
 
-                # ВАЖНОЕ ИСПРАВЛЕНИЕ: Создаем объект GCM с извлеченным nonce
                 gcm = GCM(key, nonce)
 
-            # Дешифруем с проверкой аутентификации
+            # Decrypt with authentication check
             try:
-                plaintext, auth_ok = gcm.decrypt(data_to_decrypt, aad)
+                plaintext = gcm.decrypt(data_to_decrypt, aad)
 
-                if not auth_ok:
-                    print(f"Error: Authentication failed - AAD mismatch or ciphertext tampered",
-                          file=sys.stderr)
-                    # Удаляем частично созданный файл
-                    if os.path.exists(output_file):
-                        os.remove(output_file)
-                    sys.exit(1)
-
-                # Записываем расшифрованные данные
+                # Write decrypted data
                 write_file(output_file, plaintext)
 
                 print(f"Success: GCM decryption completed. Authenticity verified.")
@@ -635,20 +587,20 @@ def handle_gcm_mode(encrypt, key, input_file, output_file, aad, iv=None):
 
 
 def handle_etm_mode(encrypt, key, input_file, output_file, aad, mac_key):
-    """Обработка режима Encrypt-then-MAC"""
+    """Handle Encrypt-then-MAC mode"""
     try:
-        from cryptocore.aead_handler import AEADHandler
+        from src.aead_handler import AEADHandler
 
         if encrypt:
-            # ШИФРОВАНИЕ Encrypt-then-MAC
+            # Encrypt-then-MAC ENCRYPTION
             data = read_file(input_file)
 
-            # Шифруем с Encrypt-then-MAC
+            # Encrypt with Encrypt-then-MAC
             ciphertext = AEADHandler.encrypt_then_mac(
                 data, key, mac_key, aad, 'ctr'
             )
 
-            # Записываем результат
+            # Write result
             write_file(output_file, ciphertext)
 
             print(f"Success: Encrypt-then-MAC completed. Data written to {output_file}")
@@ -658,10 +610,10 @@ def handle_etm_mode(encrypt, key, input_file, output_file, aad, mac_key):
                 print(f"AAD used (hex): {aad.hex()}")
 
         else:
-            # ДЕШИФРОВАНИЕ Encrypt-then-MAC
+            # Encrypt-then-MAC DECRYPTION
             ciphertext = read_file(input_file)
 
-            # Дешифруем с проверкой MAC
+            # Decrypt with MAC verification
             plaintext = AEADHandler.decrypt_and_verify(
                 ciphertext, key, mac_key, aad, 'ctr'
             )
@@ -673,7 +625,7 @@ def handle_etm_mode(encrypt, key, input_file, output_file, aad, mac_key):
                     os.remove(output_file)
                 sys.exit(1)
 
-            # Записываем расшифрованные данные
+            # Write decrypted data
             write_file(output_file, plaintext)
 
             print(f"Success: Decryption and MAC verification completed")
@@ -683,15 +635,18 @@ def handle_etm_mode(encrypt, key, input_file, output_file, aad, mac_key):
         print(f"Error: AEAD module not available", file=sys.stderr)
         print(f"Make sure aead_handler.py is in cryptocore/ directory", file=sys.stderr)
         sys.exit(1)
+    except Exception as e:
+        print(f"Error in ETM mode: {e}", file=sys.stderr)
+        if os.path.exists(output_file):
+            os.remove(output_file)
+        sys.exit(1)
 
 
 def handle_derive(args):
     """Handle the derive command"""
-    # Validate arguments
     validate_derive_args(args)
 
     try:
-        # Get password
         password = args.password
         if args.password_file:
             try:
@@ -701,22 +656,17 @@ def handle_derive(args):
                 print(f"Error reading password file: {e}", file=sys.stderr)
                 return 1
 
-        # Get or generate salt
         if args.salt:
-            # Convert hex salt to bytes
             salt_hex = args.salt
             if salt_hex.startswith('0x') or salt_hex.startswith('0X'):
                 salt_hex = salt_hex[2:]
             salt = bytes.fromhex(salt_hex)
         else:
-            # Generate random 16-byte salt
             salt = generate_random_bytes(16)
             salt_hex = salt.hex()
 
-        # Import KDF functions
-        from cryptocore.kdf.pbkdf2 import pbkdf2_hmac_sha256
+        from src.kdf.pbkdf2 import pbkdf2_hmac_sha256
 
-        # Perform key derivation
         derived_key = pbkdf2_hmac_sha256(
             password=password,
             salt=salt,
@@ -726,11 +676,9 @@ def handle_derive(args):
 
         key_hex = derived_key.hex()
 
-        # Output to stdout if not suppressed
         if not args.no_print:
             print(f"{key_hex} {salt_hex}")
 
-        # Write to file if specified
         if args.output:
             try:
                 with open(args.output, 'wb') as f:
@@ -756,18 +704,11 @@ def main():
     args = parse_args()
 
     if args.command == "encrypt":
-        # ============== ЛОГИКА ШИФРОВАНИЯ/ДЕШИФРОВАНИЯ ==============
-
-        # SPRINT 3: Валидация ключа (может быть сгенерирован при шифровании)
+        # ENCRYPTION/DECRYPTION LOGIC
         key = validate_key(args.key, args.encrypt)
-
-        # Валидация AAD (новый аргумент для GCM/ETM)
         aad = validate_aad(args.aad)
-
-        # Валидация IV (теперь используется и как nonce для GCM)
         iv = validate_iv(args.iv, args.mode, args.encrypt)
 
-        # Валидация MAC key для ETM режима
         mac_key = None
         if args.mode == "etm":
             if not args.mac_key:
@@ -783,12 +724,10 @@ def main():
                 print(f"Error: Invalid MAC key format", file=sys.stderr)
                 sys.exit(1)
 
-        # Проверка существования входного файла
         if not os.path.exists(args.input):
             print(f"Error: Input file '{args.input}' does not exist", file=sys.stderr)
             sys.exit(1)
 
-        # Определение выходного файла
         output_file = args.output
         if not output_file:
             if args.encrypt:
@@ -807,7 +746,7 @@ def main():
                 output_file = base + ".dec"
 
         try:
-            # Обработка GCM режима
+            # Handle GCM mode
             if args.mode == "gcm":
                 handle_gcm_mode(
                     args.encrypt,
@@ -818,7 +757,7 @@ def main():
                     iv
                 )
 
-            # Обработка Encrypt-then-MAC режима
+            # Handle Encrypt-then-MAC mode
             elif args.mode == "etm":
                 if not mac_key:
                     print(f"Error: MAC key is required for Encrypt-then-MAC mode", file=sys.stderr)
@@ -834,66 +773,50 @@ def main():
                 )
 
             else:
-                # СТАРАЯ ЛОГИКА ДЛЯ ОСТАЛЬНЫХ РЕЖИМОВ
-                # Получаем класс режима
+                # LEGACY LOGIC FOR OTHER MODES
                 mode_class = get_mode_class(args.mode)
 
                 if args.encrypt:
-                    # ШИФРОВАНИЕ
+                    # ENCRYPTION
                     cipher = mode_class(key)
 
-                    # Читаем данные
                     data = read_file(args.input)
 
                     if args.mode == "ecb":
-                        # ECB не использует IV
                         result = cipher.encrypt(data)
-                        iv_used = b""  # Пустой IV для ECB
+                        iv_used = b""
 
-                        # Записываем только шифртекст
                         write_file(output_file, result)
                     else:
-                        # Все остальные режимы используют IV
                         result, iv_used = cipher.encrypt(data)
 
-                        # Записываем IV + шифртекст
                         write_file_with_iv(output_file, iv_used, result)
 
-                    # SPRINT 3: Если ключ был сгенерирован, он уже показан в validate_key
-                    # Показываем IV пользователю (для дешифровки)
                     print(f"Success: Encrypted data written to {output_file}")
                     if args.mode != "ecb":
                         print(f"IV used (hex): {iv_used.hex()}")
 
-                    # Дополнительная информация о ключе
                     if not args.key:
                         print(f"Note: Save the generated key for decryption")
 
                 else:
-                    # ДЕШИФРОВАНИЕ
+                    # DECRYPTION
                     cipher = mode_class(key)
 
                     if args.mode == "ecb":
-                        # ECB не использует IV
                         data = read_file(args.input)
                         result = cipher.decrypt(data)
                     else:
-                        # Режимы с IV
                         data, iv_used = read_file_with_iv_or_none(args.input, iv)
 
-                        # Дополнительная проверка для режимов с padding
                         if args.mode in ["ecb", "cbc"] and len(data) == 0:
-                            # ECB и CBC требуют padding, поэтому пустой файл недопустим
                             print(f"Error: Input file is empty or contains only IV", file=sys.stderr)
                             print(f"       For {args.mode.upper()} mode, file must contain ciphertext data",
                                   file=sys.stderr)
                             sys.exit(1)
 
-                        # Для stream cipher modes (CFB, OFB, CTR) пустые данные допустимы
-
                         result = cipher.decrypt(data, iv_used)
 
-                    # Записываем результат
                     write_file(output_file, result)
 
                     print(f"Success: Decrypted data written to {output_file}")
@@ -903,27 +826,21 @@ def main():
             sys.exit(1)
 
     elif args.command == "dgst":
-        # ============== ЛОГИКА ДЛЯ ХЭШИРОВАНИЯ И HMAC ==============
-
-        # Проверка существования файла
+        # HASHING AND HMAC LOGIC
         if not os.path.exists(args.input):
             print(f"Error: Input file '{args.input}' does not exist", file=sys.stderr)
             sys.exit(1)
 
-        # Проверка валидности аргументов для HMAC
         if args.hmac:
             if not args.key:
                 print("Error: --key is required when using --hmac", file=sys.stderr)
                 sys.exit(1)
 
-            # Проверка формата ключа HMAC
             try:
-                # Убираем префикс 0x если есть
                 key_hex = args.key
                 if key_hex.startswith('0x') or key_hex.startswith('0X'):
                     key_hex = key_hex[2:]
 
-                # Пробуем преобразовать в байты для проверки
                 bytes.fromhex(key_hex)
             except ValueError:
                 print(f"Error: Invalid HMAC key format", file=sys.stderr)
@@ -931,12 +848,10 @@ def main():
                 print(f"       Example: 00112233445566778899aabbccddeeff", file=sys.stderr)
                 sys.exit(1)
 
-        # Проверка что --verify используется только с --hmac
         if args.verify and not args.hmac:
             print("Error: --verify can only be used with --hmac", file=sys.stderr)
             sys.exit(1)
 
-        # Проверка что --verify не используется с --output
         if args.verify and args.output:
             print("Error: --verify and --output cannot be used together", file=sys.stderr)
             print("       Use either --verify to check HMAC or --output to save HMAC", file=sys.stderr)
@@ -944,8 +859,7 @@ def main():
 
         try:
             if args.verify:
-                # РЕЖИМ ПРОВЕРКИ HMAC
-                from cryptocore.hash_handler import verify_hmac
+                from src.hash_handler import verify_hmac
                 success = verify_hmac(
                     args.algorithm,
                     args.input,
@@ -953,11 +867,9 @@ def main():
                     args.verify
                 )
 
-                # Возвращаем соответствующий exit code
                 sys.exit(0 if success else 1)
             else:
-                # РЕЖИМ ВЫЧИСЛЕНИЯ ХЭША/HMAC
-                from cryptocore.hash_handler import compute_hash
+                from src.hash_handler import compute_hash
                 compute_hash(
                     args.algorithm,
                     args.input,
@@ -974,13 +886,10 @@ def main():
             sys.exit(1)
 
     elif args.command == "derive":
-        # ============== НОВАЯ ЛОГИКА ДЛЯ ВЫВОДА КЛЮЧЕЙ ==============
-
-        # Проверка аргументов
+        # KEY DERIVATION LOGIC
         validate_derive_args(args)
 
         try:
-            # Получаем пароль
             password = args.password
             if args.password_file:
                 try:
@@ -990,22 +899,17 @@ def main():
                     print(f"Error reading password file: {e}", file=sys.stderr)
                     sys.exit(1)
 
-            # Получаем или генерируем соль
             if args.salt:
-                # Конвертируем hex соль в байты
                 salt_hex = args.salt
                 if salt_hex.startswith('0x') or salt_hex.startswith('0X'):
                     salt_hex = salt_hex[2:]
                 salt = bytes.fromhex(salt_hex)
             else:
-                # Генерируем случайную 16-байтную соль
                 salt = generate_random_bytes(16)
                 salt_hex = salt.hex()
 
-            # Импортируем функции KDF
-            from cryptocore.kdf.pbkdf2 import pbkdf2_hmac_sha256
+            from src.kdf.pbkdf2 import pbkdf2_hmac_sha256
 
-            # Выполняем вывод ключа
             derived_key = pbkdf2_hmac_sha256(
                 password=password,
                 salt=salt,
@@ -1015,11 +919,9 @@ def main():
 
             key_hex = derived_key.hex()
 
-            # Выводим в stdout, если не подавлено
             if not args.no_print:
                 print(f"{key_hex} {salt_hex}")
 
-            # Записываем в файл, если указано
             if args.output:
                 try:
                     with open(args.output, 'wb') as f:
@@ -1048,3 +950,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
