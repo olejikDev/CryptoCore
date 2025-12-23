@@ -130,10 +130,10 @@ python -m pytest tests/test_hkdf.py -v
 python -m pytest tests/test_gcm.py -v
 
 # Тестирование HMAC (Sprint 5)
-python -m pytest tests/test_hmac.py -v
+python -m pytest tests/test_mac.py -v
 
 # Тестирование SHA-256 (Sprint 4)
-python -m pytest tests/test_sha256.py -v
+python -m pytest tests/test_hash.py -v
 
 # Полный набор тестов
 python -m pytest tests/ -v
