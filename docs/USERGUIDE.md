@@ -147,5 +147,13 @@ python src/crypto_core.py -algorithm aes -mode ecb -encrypt -key @00112233445566
 # Дешифрование ecb
 python src/crypto_core.py -algorithm aes -mode ecb -decrypt -key @00112233445566778899aabbccddeeff -input cipher.bin -output decrypted.txt
 
+# Шифрование с CryptoCore
+python cryptocore.py encrypt --algorithm aes --mode cbc --encrypt --key 000102030405060708090a0b0c0d0e0f --input test.txt --output test_encrypted.bin
 
+# Дешифрование с CryptoCore
+python cryptocore.py encrypt --algorithm aes --mode cbc --decrypt --key 000102030405060708090a0b0c0d0e0f --input test_encrypted.bin --output test_decrypted.txt
+
+# Сравнение
+Get-Item test.txt, decrypted.txt | Format-Table Name, Length -AutoSize
 ```
+
