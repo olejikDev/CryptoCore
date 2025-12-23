@@ -111,3 +111,34 @@ python3-full — устанавливает Python 3 с дополнительн
 ## 3. Ошибки в тестах
 
 ### Если тесты не проходят, убедитесь, что вы выполнили все шаги и установили все зависимости.
+
+## Тестирование
+
+### Запуск тестов:
+```bash
+# Активация виртуального окружения
+source venv/bin/activate
+
+# Переход в директорию проекта
+cd src
+
+# Тестирование Key Derivation (Sprint 7)
+python -m pytest tests/test_pbkdf2.py -v
+python -m pytest tests/test_hkdf.py -v
+
+# Тестирование GCM (Sprint 6)
+python -m pytest tests/test_gcm.py -v
+
+# Тестирование HMAC (Sprint 5)
+python -m pytest tests/test_hmac.py -v
+
+# Тестирование SHA-256 (Sprint 4)
+python -m pytest tests/test_sha256.py -v
+
+# Полный набор тестов
+python -m pytest tests/ -v
+
+# Тестирование ecb (Sprint 1)
+python -m pytest tests/test_roundtrip.py -v
+
+```
