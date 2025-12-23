@@ -141,4 +141,11 @@ python -m pytest tests/ -v
 # Тестирование ecb (Sprint 1)
 python -m pytest tests/test_roundtrip.py -v
 
+# Шифрование
+python src/crypto_core.py -algorithm aes -mode ecb -encrypt -key @00112233445566778899aabbccddeeff -input plain.txt -output cipher.bin
+
+# Дешифрование ecb
+python src/crypto_core.py -algorithm aes -mode ecb -decrypt -key @00112233445566778899aabbccddeeff -input cipher.bin -output decrypted.txt
+
+
 ```
