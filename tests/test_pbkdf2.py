@@ -1,80 +1,1 @@
-﻿import unittest
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
-from src.kdf.pbkdf2 import pbkdf2_hmac_sha256
-
-
-class TestPBKDF2(unittest.TestCase):
-
-    def test_rfc6070_vector1(self):
-        """Test vector 1 from RFC 6070"""
-        password = b'password'
-        salt = b'salt'
-        iterations = 1
-        dklen = 20
-
-        result = pbkdf2_hmac_sha256(password, salt, iterations, dklen)
-        expected = bytes.fromhex('0c60c80f961f0e71f3a9b524af6012062fe037a6')
-        self.assertEqual(result, expected)
-
-    def test_rfc6070_vector2(self):
-        """Test vector 2 from RFC 6070"""
-        password = b'password'
-        salt = b'salt'
-        iterations = 2
-        dklen = 20
-
-        result = pbkdf2_hmac_sha256(password, salt, iterations, dklen)
-        expected = bytes.fromhex('ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957')
-        self.assertEqual(result, expected)
-
-    def test_rfc6070_vector3(self):
-        """Test vector 3 from RFC 6070 (SHA-1 version adapted for SHA-256)"""
-        password = b'password'
-        salt = b'salt'
-        iterations = 4096
-        dklen = 20
-
-        result = pbkdf2_hmac_sha256(password, salt, iterations, dklen)
-        # Note: This is the SHA-1 result from RFC 6070
-        # For SHA-256, we'd need different test vectors
-        # Let's just verify it produces output of correct length
-        self.assertEqual(len(result), dklen)
-
-    def test_empty_password(self):
-        """Test with empty password"""
-        password = b''
-        salt = b'salt'
-        iterations = 1
-        dklen = 32
-
-        result = pbkdf2_hmac_sha256(password, salt, iterations, dklen)
-        self.assertEqual(len(result), dklen)
-
-    def test_empty_salt(self):
-        """Test with empty salt"""
-        password = b'password'
-        salt = b''
-        iterations = 1
-        dklen = 32
-
-        result = pbkdf2_hmac_sha256(password, salt, iterations, dklen)
-        self.assertEqual(len(result), dklen)
-
-    def test_various_lengths(self):
-        """Test various key lengths"""
-        password = b'test'
-        salt = b'salt'
-        iterations = 1000
-
-        for dklen in [1, 16, 32, 64, 100]:
-            result = pbkdf2_hmac_sha256(password, salt, iterations, dklen)
-            self.assertEqual(len(result), dklen)
-
-
-if __name__ == '__main__':
-    unittest.main()
-
+﻿#!/usr/bin/env python3"""Тесты для PBKDF2 (Password-Based Key Derivation Function 2)"""import osimport unittest# Импортируем обе функции для тестированияfrom src.kdf.pbkdf2 import pbkdf2_hmac_sha1, pbkdf2_hmac_sha256class TestPBKDF2(unittest.TestCase):    """Тесты для реализации PBKDF2"""    def test_rfc6070_vector1(self):        """Test vector 1 from RFC 6070 (HMAC-SHA1)"""        password = b'password'        salt = b'salt'        iterations = 1        dklen = 20        result = pbkdf2_hmac_sha1(password, salt, iterations, dklen)        expected = bytes.fromhex('0c60c80f961f0e71f3a9b524af6012062fe037a6')        self.assertEqual(result, expected)        print("✓ RFC 6070 Vector 1 test passed")    def test_rfc6070_vector2(self):        """Test vector 2 from RFC 6070 (HMAC-SHA1)"""        password = b'password'        salt = b'salt'        iterations = 2        dklen = 20        result = pbkdf2_hmac_sha1(password, salt, iterations, dklen)        expected = bytes.fromhex('ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957')        self.assertEqual(result, expected)        print("✓ RFC 6070 Vector 2 test passed")    def test_rfc6070_vector3(self):        """Test vector 3 from RFC 6070 (HMAC-SHA1)"""        password = b'password'        salt = b'salt'        iterations = 4096        dklen = 20        result = pbkdf2_hmac_sha1(password, salt, iterations, dklen)        expected = bytes.fromhex('4b007901b765489abead49d926f721d065a429c1')        self.assertEqual(result, expected)        print("✓ RFC 6070 Vector 3 test passed")    def test_pbkdf2_hmac_sha256_basic(self):        """Basic test for PBKDF2-HMAC-SHA256"""        password = b'test'        salt = b'salt'        iterations = 1000        dklen = 32        result = pbkdf2_hmac_sha256(password, salt, iterations, dklen)        # Проверяем длину        self.assertEqual(len(result), dklen)        # Проверяем детерминизм        result2 = pbkdf2_hmac_sha256(password, salt, iterations, dklen)        self.assertEqual(result, result2)        print("✓ PBKDF2-HMAC-SHA256 basic test passed")    def test_empty_password(self):        """Test with empty password"""        password = b''        salt = b'salt'        iterations = 1        dklen = 20        result = pbkdf2_hmac_sha1(password, salt, iterations, dklen)        self.assertEqual(len(result), dklen)        print("✓ Empty password test passed")    def test_empty_salt(self):        """Test with empty salt"""        password = b'password'        salt = b''        iterations = 1        dklen = 20        result = pbkdf2_hmac_sha1(password, salt, iterations, dklen)        self.assertEqual(len(result), dklen)        print("✓ Empty salt test passed")    def test_various_lengths(self):        """Test with various output lengths"""        password = b'password'        salt = b'salt'        iterations = 100        for dklen in [1, 16, 32, 64, 100]:            result = pbkdf2_hmac_sha256(password, salt, iterations, dklen)            self.assertEqual(len(result), dklen)        print("✓ Various lengths test passed")if __name__ == "__main__":    print("Running PBKDF2 tests...")    unittest.main(verbosity=2)
